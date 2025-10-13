@@ -19,7 +19,9 @@ struct SimilarPhotosListView: View {
 
     var body: some View {
         ZStack {
-            if similarityManager.similarGroups.isEmpty {
+            if similarityManager.similarGroups.isEmpty && similarityManager.duplicateGroups.isEmpty
+                && similarityManager.screenshotGroups.isEmpty
+            {
                 // Benzer fotoğraf bulunamadı
                 VStack(spacing: 20) {
                     Image(systemName: "checkmark.circle.fill")
@@ -41,27 +43,58 @@ struct SimilarPhotosListView: View {
                     // Özet bilgi
                     Section {
                         VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Image(systemName: "square.stack.3d.up.fill")
-                                    .foregroundColor(.blue)
-                                Text("\(similarityManager.similarGroups.count) benzer grup bulundu")
-                                    .font(.headline)
+                            // Duplikatlar
+                            if !similarityManager.duplicateGroups.isEmpty {
+                                HStack {
+                                    Image(systemName: "doc.on.doc.fill")
+                                        .foregroundColor(.red)
+                                    Text("\(similarityManager.duplicateGroups.count) duplikat grup")
+                                        .font(.headline)
+                                }
                             }
+
+                            // Screenshots
+                            if !similarityManager.screenshotGroups.isEmpty {
+                                HStack {
+                                    Image(systemName: "camera.viewfinder")
+                                        .foregroundColor(.orange)
+                                    Text(
+                                        "\(similarityManager.screenshotGroups.count) screenshot grup"
+                                    )
+                                    .font(.headline)
+                                }
+                            }
+
+                            // Benzer fotoğraflar
+                            if !similarityManager.similarGroups.isEmpty {
+                                HStack {
+                                    Image(systemName: "square.stack.3d.up.fill")
+                                        .foregroundColor(.blue)
+                                    Text("\(similarityManager.similarGroups.count) benzer grup")
+                                        .font(.headline)
+                                }
+                            }
+
+                            Divider()
+
+                            // Toplam istatistikler
+                            let totalPhotos =
+                                similarityManager.getTotalDuplicatesCount()
+                                + similarityManager.getTotalScreenshotsCount()
+                                + similarityManager.getTotalSimilarPhotosCount()
 
                             HStack {
                                 Image(systemName: "photo.stack")
                                     .foregroundColor(.purple)
-                                Text(
-                                    "\(similarityManager.getTotalSimilarPhotosCount()) benzer fotoğraf"
-                                )
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                Text("\(totalPhotos) toplam fotoğraf")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
 
                             if similarityManager.getPotentialSpaceSavings() > 0 {
                                 HStack {
                                     Image(systemName: "internaldrive")
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.green)
                                     Text(
                                         "~\(formatBytes(similarityManager.getPotentialSpaceSavings())) tasarruf edilebilir"
                                     )
@@ -73,23 +106,210 @@ struct SimilarPhotosListView: View {
                         .padding(.vertical, 8)
                     }
 
-                    // Gruplar
-                    Section(header: Text("Benzer Fotoğraf Grupları")) {
-                        ForEach(similarityManager.similarGroups) { group in
-                            NavigationLink {
-                                SimilarPhotoDetailView(
-                                    group: group,
-                                    photoManager: photoManager,
-                                    onDelete: { photos in
-                                        photosToDelete = photos
-                                        showingDeleteConfirmation = true
+                    // Video ve Live Photos
+                    if similarityManager.getTotalVideosCount() > 0
+                        || similarityManager.getTotalLivePhotosCount() > 0
+                    {
+                        Section(
+                            header: HStack {
+                                Image(systemName: "video.fill")
+                                    .foregroundColor(.blue)
+                                Text("Video ve Live Photos")
+                                    .foregroundColor(.blue)
+                            }
+                        ) {
+                            if similarityManager.getTotalVideosCount() > 0 {
+                                HStack {
+                                    Image(systemName: "video.fill")
+                                        .foregroundColor(.blue)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("\(similarityManager.getTotalVideosCount()) video")
+                                            .font(.headline)
+                                        Text("Video analizi yakında eklenecek")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
                                     }
+                                    Spacer()
+                                }
+                                .padding(.vertical, 8)
+                            }
+
+                            if similarityManager.getTotalLivePhotosCount() > 0 {
+                                HStack {
+                                    Image(systemName: "livephoto")
+                                        .foregroundColor(.purple)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(
+                                            "\(similarityManager.getTotalLivePhotosCount()) Live Photo"
+                                        )
+                                        .font(.headline)
+                                        Text("Live Photos olarak işaretlendi")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.vertical, 8)
+                            }
+                        }
+                    }
+
+                    // Kalite Sorunları
+                    if similarityManager.getTotalQualityIssuesCount() > 0 {
+                        Section(
+                            header: HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text("Kalite Sorunları")
+                                    .foregroundColor(.orange)
+                            }
+                        ) {
+                            NavigationLink {
+                                QualityIssuesView(
+                                    similarityManager: similarityManager,
+                                    photoManager: photoManager
                                 )
                             } label: {
-                                SimilarGroupRow(group: group)
-                                    .padding(.leading, -20)
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack(spacing: 8) {
+                                            if !similarityManager.blurryPhotos.isEmpty {
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "eye.slash.fill")
+                                                        .font(.caption)
+                                                        .foregroundColor(.orange)
+                                                    Text("\(similarityManager.blurryPhotos.count)")
+                                                        .font(.caption)
+                                                        .fontWeight(.semibold)
+                                                }
+                                            }
+
+                                            if !similarityManager.darkPhotos.isEmpty {
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "moon.fill")
+                                                        .font(.caption)
+                                                        .foregroundColor(.purple)
+                                                    Text("\(similarityManager.darkPhotos.count)")
+                                                        .font(.caption)
+                                                        .fontWeight(.semibold)
+                                                }
+                                            }
+
+                                            if !similarityManager.brightPhotos.isEmpty {
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "sun.max.fill")
+                                                        .font(.caption)
+                                                        .foregroundColor(.yellow)
+                                                    Text("\(similarityManager.brightPhotos.count)")
+                                                        .font(.caption)
+                                                        .fontWeight(.semibold)
+                                                }
+                                            }
+                                        }
+
+                                        Text("Bulanık, karanlık veya aşırı parlak fotoğraflar")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                        }
+                    }
+
+                    // Duplikat Grupları
+                    if !similarityManager.duplicateGroups.isEmpty {
+                        Section(
+                            header: HStack {
+                                Image(systemName: "doc.on.doc.fill")
+                                    .foregroundColor(.red)
+                                Text("Duplikat Fotoğraflar (%100 Aynı)")
+                                    .foregroundColor(.red)
+                            }
+                        ) {
+                            ForEach(similarityManager.duplicateGroups) { group in
+                                NavigationLink {
+                                    SimilarPhotoDetailView(
+                                        group: group,
+                                        photoManager: photoManager,
+                                        onDelete: { photos in
+                                            photosToDelete = photos
+                                            showingDeleteConfirmation = true
+                                        }
+                                    )
+                                } label: {
+                                    SimilarGroupRow(group: group)
+                                        .padding(.leading, -20)
+                                }
+                                .listRowInsets(
+                                    EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                            }
+                        }
+                    }
+
+                    // Screenshot Grupları
+                    if !similarityManager.screenshotGroups.isEmpty {
+                        Section(
+                            header: HStack {
+                                Image(systemName: "camera.viewfinder")
+                                    .foregroundColor(.orange)
+                                Text("Ekran Görüntüleri")
+                                    .foregroundColor(.orange)
+                            }
+                        ) {
+                            ForEach(similarityManager.screenshotGroups) { group in
+                                NavigationLink {
+                                    SimilarPhotoDetailView(
+                                        group: group,
+                                        photoManager: photoManager,
+                                        onDelete: { photos in
+                                            photosToDelete = photos
+                                            showingDeleteConfirmation = true
+                                        }
+                                    )
+                                } label: {
+                                    SimilarGroupRow(group: group)
+                                        .padding(.leading, -20)
+                                }
+                                .listRowInsets(
+                                    EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                            }
+                        }
+                    }
+
+                    // Benzer Gruplar
+                    if !similarityManager.similarGroups.isEmpty {
+                        Section(
+                            header: HStack {
+                                Image(systemName: "square.stack.3d.up.fill")
+                                    .foregroundColor(.blue)
+                                Text("Benzer Fotoğraf Grupları")
+                                    .foregroundColor(.blue)
+                            }
+                        ) {
+                            ForEach(similarityManager.similarGroups) { group in
+                                NavigationLink {
+                                    SimilarPhotoDetailView(
+                                        group: group,
+                                        photoManager: photoManager,
+                                        onDelete: { photos in
+                                            photosToDelete = photos
+                                            showingDeleteConfirmation = true
+                                        }
+                                    )
+                                } label: {
+                                    SimilarGroupRow(group: group)
+                                        .padding(.leading, -20)
+                                }
+                                .listRowInsets(
+                                    EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                            }
                         }
                     }
                 }
@@ -137,9 +357,11 @@ struct SimilarGroupRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     // İlk satır: Fotoğraf sayısı ve benzerlik
                     HStack(spacing: 4) {
-                        Text("\(group.count) benzer fotoğraf")
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                        Text(
+                            "\(group.count) \(group.allScreenshots ? "screenshot" : "benzer fotoğraf")"
+                        )
+                        .font(.caption)
+                        .fontWeight(.semibold)
 
                         Text("•")
                             .font(.caption2)
@@ -148,6 +370,22 @@ struct SimilarGroupRow: View {
                         Text(getSimilarityDescription(group.similarityScore))
                             .font(.caption2)
                             .foregroundColor(.secondary)
+
+                        // Favori badge
+                        if group.hasFavorite {
+                            Text("•")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.yellow)
+                                Text("Favori")
+                                    .font(.caption2)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
                     }
 
                     // İkinci satır: Tarih
@@ -164,16 +402,31 @@ struct SimilarGroupRow: View {
                         if let thumbnail = photo.thumbnail,
                             let uiImage = thumbnail.toUIImage()
                         {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white, lineWidth: 3)
-                                )
-                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            ZStack(alignment: .topLeading) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(
+                                                photo.isFavorite ? Color.yellow : Color.white,
+                                                lineWidth: photo.isFavorite ? 4 : 3
+                                            )
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+                                // Favori badge
+                                if photo.isFavorite {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.yellow)
+                                        .padding(4)
+                                        .background(Circle().fill(Color.black.opacity(0.5)))
+                                        .offset(x: 4, y: 4)
+                                }
+                            }
                         }
                     }
                 }
@@ -200,7 +453,9 @@ struct SimilarGroupRow: View {
     }
 
     private func getSimilarityDescription(_ score: Double) -> String {
-        if score >= 0.95 {
+        if score >= 0.99 {
+            return "%100 Aynı"
+        } else if score >= 0.95 {
             return "Neredeyse aynı"
         } else if score >= 0.85 {
             return "Çok benzer"
@@ -251,6 +506,21 @@ struct SimilarPhotoDetailView: View {
                 Text("Silmek istediğiniz fotoğrafları seçin")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
+
+                // Favori uyarısı
+                if group.hasFavorite {
+                    HStack {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                        Text("Favori işaretli fotoğraflar otomatik olarak korunur")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(Color.yellow.opacity(0.1))
+                    .cornerRadius(8)
+                }
             }
             .padding()
 
@@ -262,6 +532,11 @@ struct SimilarPhotoDetailView: View {
                             photo: photo,
                             isSelected: selectedPhotos.contains(photo.id),
                             onTap: {
+                                // Favori fotoğrafları seçilmeye izin verme
+                                if photo.isFavorite {
+                                    return
+                                }
+
                                 if selectedPhotos.contains(photo.id) {
                                     selectedPhotos.remove(photo.id)
                                 } else {
@@ -298,20 +573,22 @@ struct SimilarPhotoDetailView: View {
 
             // Alt butonlar
             HStack(spacing: 15) {
-                // Tümünü seç/kaldır
+                // Tümünü seç/kaldır (favoriler hariç)
                 Button(action: {
-                    if selectedPhotos.count == group.photos.count {
+                    let nonFavorites = group.photos.filter { !$0.isFavorite }
+                    if selectedPhotos.count == nonFavorites.count {
                         selectedPhotos.removeAll()
                     } else {
-                        selectedPhotos = Set(group.photos.map { $0.id })
+                        selectedPhotos = Set(nonFavorites.map { $0.id })
                     }
                 }) {
                     HStack {
+                        let nonFavorites = group.photos.filter { !$0.isFavorite }
                         Image(
-                            systemName: selectedPhotos.count == group.photos.count
+                            systemName: selectedPhotos.count == nonFavorites.count
                                 ? "checkmark.circle" : "circle")
                         Text(
-                            selectedPhotos.count == group.photos.count
+                            selectedPhotos.count == nonFavorites.count
                                 ? "Tümünü Kaldır" : "Tümünü Seç")
                     }
                     .frame(maxWidth: .infinity)
@@ -320,7 +597,7 @@ struct SimilarPhotoDetailView: View {
                     .cornerRadius(12)
                 }
 
-                // En eskilerini seç
+                // En eskilerini seç (favoriler hariç)
                 Button(action: {
                     selectOldestPhotos()
                 }) {
@@ -376,7 +653,9 @@ struct SimilarPhotoDetailView: View {
     }
 
     private func selectOldestPhotos() {
-        let sorted = group.photos.sorted { photo1, photo2 in
+        // Favori olmayanları seç ve en eskileri bul
+        let nonFavorites = group.photos.filter { !$0.isFavorite }
+        let sorted = nonFavorites.sorted { photo1, photo2 in
             guard let date1 = photo1.creationDate, let date2 = photo2.creationDate else {
                 return false
             }
@@ -420,7 +699,23 @@ struct PhotoGridItem: View {
                         )
                 }
 
-                // Seçim işareti
+                // Favori badge (sol üst)
+                if photo.isFavorite {
+                    VStack {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.yellow)
+                                .padding(6)
+                                .background(Circle().fill(Color.black.opacity(0.6)))
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                    .padding(8)
+                }
+
+                // Seçim işareti (sağ üst)
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
@@ -431,10 +726,18 @@ struct PhotoGridItem: View {
             }
 
             // Tarih bilgisi
-            if let date = photo.creationDate {
-                Text(date, style: .date)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+            HStack {
+                if let date = photo.creationDate {
+                    Text(date, style: .date)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                if photo.isFavorite {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(.yellow)
+                }
             }
 
             // Boyut bilgisi
@@ -444,8 +747,12 @@ struct PhotoGridItem: View {
         }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
+                .stroke(
+                    photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
+                    lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
+                )
         )
+        .opacity(photo.isFavorite ? 1.0 : (isSelected ? 1.0 : 0.95))
         .onTapGesture {
             onTap()
         }

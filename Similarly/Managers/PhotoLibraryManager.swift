@@ -55,9 +55,11 @@ class PhotoLibraryManager: ObservableObject {
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
-        // Sadece fotoğrafları al (video hariç)
+        // Fotoğraf ve videoları al
         fetchOptions.predicate = NSPredicate(
-            format: "mediaType = %d", PHAssetMediaType.image.rawValue)
+            format: "mediaType = %d OR mediaType = %d",
+            PHAssetMediaType.image.rawValue,
+            PHAssetMediaType.video.rawValue)
 
         let fetchResult = PHAsset.fetchAssets(with: fetchOptions)
         var tempPhotos: [PhotoItem] = []
@@ -68,7 +70,12 @@ class PhotoLibraryManager: ObservableObject {
         }
 
         photos = tempPhotos
-        print("📸 \(photos.count) fotoğraf bulundu")
+        let imageCount = tempPhotos.filter { $0.mediaType == .image }.count
+        let videoCount = tempPhotos.filter { $0.mediaType == .video }.count
+        print("📸 \(imageCount) fotoğraf bulundu")
+        if videoCount > 0 {
+            print("🎥 \(videoCount) video bulundu")
+        }
 
         await processPhotos()
     }
@@ -108,8 +115,15 @@ class PhotoLibraryManager: ObservableObject {
                 group.addTask {
                     var processedPhoto = photo
                     processedPhoto = await self.loadThumbnail(for: processedPhoto)
-                    processedPhoto = await self.computePHash(for: processedPhoto)
-                    processedPhoto = await self.computeHistogram(for: processedPhoto)
+
+                    // Sadece fotoğraflar için analiz yap (video için değil)
+                    let mediaType = processedPhoto.asset.mediaType
+                    if mediaType == .image {
+                        processedPhoto = await self.computePHash(for: processedPhoto)
+                        processedPhoto = await self.computeHistogram(for: processedPhoto)
+                        processedPhoto = await self.analyzeQuality(for: processedPhoto)
+                    }
+
                     return (startIndex + index, processedPhoto)
                 }
             }
@@ -268,6 +282,175 @@ class PhotoLibraryManager: ObservableObject {
 
         updatedPhoto.histogram = histogramValues
         return updatedPhoto
+    }
+
+    // MARK: - Quality Analysis
+
+    private func analyzeQuality(for photo: PhotoItem) async -> PhotoItem {
+        var updatedPhoto = photo
+        guard let ciImage = photo.thumbnail else { return updatedPhoto }
+
+        // 1. Bulanıklık analizi (Laplacian Variance)
+        let blurScore = calculateBlurScore(ciImage)
+        updatedPhoto.blurScore = blurScore
+
+        // 2. Parlaklık analizi
+        let brightnessScore = calculateBrightness(ciImage)
+        updatedPhoto.brightnessScore = brightnessScore
+
+        return updatedPhoto
+    }
+
+    private func calculateBlurScore(_ image: CIImage) -> Double {
+        // Laplacian filtresi ile kenar tespiti
+        let context = CIContext()
+
+        // Grayscale'e çevir
+        guard let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono"),
+            let colorControlsFilter = CIFilter(name: "CIColorControls")
+        else {
+            return 200.0  // Default: not blurry
+        }
+
+        grayscaleFilter.setValue(image, forKey: kCIInputImageKey)
+        guard let grayscaleOutput = grayscaleFilter.outputImage else {
+            return 200.0
+        }
+
+        // Kontrast artır (kenarları belirginleştir)
+        colorControlsFilter.setValue(grayscaleOutput, forKey: kCIInputImageKey)
+        colorControlsFilter.setValue(2.0, forKey: kCIInputContrastKey)
+
+        guard let contrastedImage = colorControlsFilter.outputImage else {
+            return 200.0
+        }
+
+        // Küçük bir bölge üzerinde çalış (performans için)
+        let extent = CGRect(
+            x: 0, y: 0, width: min(contrastedImage.extent.width, 100),
+            height: min(contrastedImage.extent.height, 100))
+
+        guard let cgImage = context.createCGImage(contrastedImage, from: extent) else {
+            return 200.0
+        }
+
+        // Piksel verilerini al
+        let width = cgImage.width
+        let height = cgImage.height
+        let bytesPerPixel = 4
+        let bytesPerRow = bytesPerPixel * width
+        let bitsPerComponent = 8
+
+        var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard
+            let context2 = CGContext(
+                data: &pixelData,
+                width: width,
+                height: height,
+                bitsPerComponent: bitsPerComponent,
+                bytesPerRow: bytesPerRow,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
+            return 200.0
+        }
+
+        context2.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Laplacian variance hesapla (basitleştirilmiş)
+        var variance = 0.0
+        var mean = 0.0
+        var count = 0
+
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                let idx = (y * width + x) * bytesPerPixel
+                let center = Double(pixelData[idx])
+
+                // 4-komşu Laplacian
+                let top = Double(pixelData[((y - 1) * width + x) * bytesPerPixel])
+                let bottom = Double(pixelData[((y + 1) * width + x) * bytesPerPixel])
+                let left = Double(pixelData[(y * width + (x - 1)) * bytesPerPixel])
+                let right = Double(pixelData[(y * width + (x + 1)) * bytesPerPixel])
+
+                let laplacian = abs(4 * center - top - bottom - left - right)
+                mean += laplacian
+                count += 1
+            }
+        }
+
+        mean /= Double(count)
+
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                let idx = (y * width + x) * bytesPerPixel
+                let center = Double(pixelData[idx])
+
+                let top = Double(pixelData[((y - 1) * width + x) * bytesPerPixel])
+                let bottom = Double(pixelData[((y + 1) * width + x) * bytesPerPixel])
+                let left = Double(pixelData[(y * width + (x - 1)) * bytesPerPixel])
+                let right = Double(pixelData[(y * width + (x + 1)) * bytesPerPixel])
+
+                let laplacian = abs(4 * center - top - bottom - left - right)
+                variance += pow(laplacian - mean, 2)
+            }
+        }
+
+        variance /= Double(count)
+
+        return variance
+    }
+
+    private func calculateBrightness(_ image: CIImage) -> Double {
+        let context = CIContext()
+        let extent = CGRect(
+            x: 0, y: 0, width: min(image.extent.width, 100), height: min(image.extent.height, 100))
+
+        guard let cgImage = context.createCGImage(image, from: extent) else {
+            return 0.5  // Default: medium brightness
+        }
+
+        let width = cgImage.width
+        let height = cgImage.height
+        let bytesPerPixel = 4
+        let bytesPerRow = bytesPerPixel * width
+        let bitsPerComponent = 8
+
+        var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard
+            let context2 = CGContext(
+                data: &pixelData,
+                width: width,
+                height: height,
+                bitsPerComponent: bitsPerComponent,
+                bytesPerRow: bytesPerRow,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
+            return 0.5
+        }
+
+        context2.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Ortalama parlaklık hesapla (RGB -> Luminance)
+        var totalBrightness = 0.0
+        for i in stride(from: 0, to: pixelData.count, by: bytesPerPixel) {
+            let r = Double(pixelData[i])
+            let g = Double(pixelData[i + 1])
+            let b = Double(pixelData[i + 2])
+
+            // Perceived luminance formula
+            let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+            totalBrightness += luminance
+        }
+
+        return totalBrightness / Double(width * height)
     }
 
     // MARK: - Delete Photos

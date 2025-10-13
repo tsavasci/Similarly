@@ -15,14 +15,51 @@ import Photos
 @MainActor
 class SimilarityManager: ObservableObject {
     @Published var similarGroups: [SimilarPhotoGroup] = []
+    @Published var duplicateGroups: [SimilarPhotoGroup] = []
+    @Published var screenshotGroups: [SimilarPhotoGroup] = []
+    @Published var blurryPhotos: [PhotoItem] = []
+    @Published var darkPhotos: [PhotoItem] = []
+    @Published var brightPhotos: [PhotoItem] = []
+    @Published var videos: [PhotoItem] = []
+    @Published var livePhotos: [PhotoItem] = []
     @Published var isAnalyzing = false
     @Published var analysisProgress: Double = 0.0
 
-    // Benzerlik eşikleri
-    private let dateThresholdSeconds: TimeInterval = 5.0  // 5 saniye içinde
-    private let locationThresholdMeters: Double = 100.0  // 100 metre içinde
-    private let pHashThreshold: Int = 10  // Hamming distance
-    private let histogramThreshold: Double = 0.15  // %85 benzerlik
+    // Benzerlik eşikleri - UserDefaults'tan alınıyor
+    private var dateThresholdSeconds: TimeInterval {
+        UserDefaults.standard.double(forKey: "dateThreshold")
+    }
+
+    private var locationThresholdMeters: Double {
+        UserDefaults.standard.double(forKey: "locationThreshold")
+    }
+
+    private var similarityThreshold: Double {
+        let threshold = UserDefaults.standard.double(forKey: "similarityThreshold")
+        return threshold > 0 ? threshold : 0.85  // Default 0.85
+    }
+
+    private var pHashThreshold: Int {
+        // Benzerlik threshold'una göre dinamik hesapla
+        // 0.85 = 10 hamming distance
+        // 0.70 = 15 hamming distance
+        // 0.95 = 5 hamming distance
+        let similarity = similarityThreshold
+        if similarity >= 0.95 {
+            return 5
+        } else if similarity >= 0.85 {
+            return 10
+        } else if similarity >= 0.75 {
+            return 12
+        } else {
+            return 15
+        }
+    }
+
+    private var histogramThreshold: Double {
+        // Benzerlik threshold'una göre histogram eşiği
+        return 1.0 - similarityThreshold
+    }
 
     // MARK: - Main Analysis Function
 
@@ -31,10 +68,23 @@ class SimilarityManager: ObservableObject {
         analysisProgress = 0.0
         similarGroups = []
 
-        print("🔍 \(photos.count) fotoğraf arasında benzerlik analizi başlatılıyor...")
+        // Videoları ve Live Photos'ları ayır
+        videos = photos.filter { $0.mediaType == .video }
+        livePhotos = photos.filter { $0.isLivePhoto }
+
+        // Sadece image'ları analiz et
+        let imagesToAnalyze = photos.filter { $0.mediaType == .image }
+
+        print("🔍 \(imagesToAnalyze.count) fotoğraf arasında benzerlik analizi başlatılıyor...")
+        if !videos.isEmpty {
+            print("🎥 \(videos.count) video bulundu")
+        }
+        if !livePhotos.isEmpty {
+            print("📸 \(livePhotos.count) Live Photo bulundu")
+        }
 
         // 1. Metadata ile ön filtreleme yap
-        let candidateGroups = await filterByMetadata(photos)
+        let candidateGroups = await filterByMetadata(imagesToAnalyze)
         analysisProgress = 0.3
 
         print("📊 \(candidateGroups.count) aday grup bulundu (metadata bazlı)")
@@ -54,14 +104,100 @@ class SimilarityManager: ObservableObject {
             analysisProgress = progress
         }
 
-        // Benzerlik skoruna göre sırala (en yüksek benzerlik önce)
-        finalGroups.sort { $0.similarityScore > $1.similarityScore }
+        // Grupları kategorilere ayır
+        categorizeGroups(finalGroups)
 
-        similarGroups = finalGroups
         isAnalyzing = false
         analysisProgress = 1.0
 
+        // Kalite sorunlu fotoğrafları filtrele
+        detectQualityIssues(imagesToAnalyze)
+
         print("✅ \(similarGroups.count) benzer fotoğraf grubu bulundu")
+        print("✅ \(duplicateGroups.count) duplikat grup bulundu")
+        print("✅ \(screenshotGroups.count) screenshot grup bulundu")
+        print("🔍 \(blurryPhotos.count) bulanık fotoğraf bulundu")
+        print("🔍 \(darkPhotos.count) karanlık fotoğraf bulundu")
+        print("🔍 \(brightPhotos.count) aşırı parlak fotoğraf bulundu")
+    }
+
+    // MARK: - Group Categorization
+
+    private func categorizeGroups(_ groups: [SimilarPhotoGroup]) {
+        var duplicates: [SimilarPhotoGroup] = []
+        var screenshots: [SimilarPhotoGroup] = []
+        var similar: [SimilarPhotoGroup] = []
+
+        for group in groups {
+            // Her grupta favorileri korumak için sırala
+            let sortedGroup = sortGroupWithFavoritesFirst(group)
+
+            if sortedGroup.isDuplicate {
+                duplicates.append(sortedGroup)
+            } else if sortedGroup.allScreenshots {
+                screenshots.append(sortedGroup)
+            } else {
+                similar.append(sortedGroup)
+            }
+        }
+
+        // Benzerlik skoruna göre sırala (en yüksek benzerlik önce)
+        duplicateGroups = duplicates.sorted { $0.similarityScore > $1.similarityScore }
+        screenshotGroups = screenshots.sorted { $0.similarityScore > $1.similarityScore }
+        similarGroups = similar.sorted { $0.similarityScore > $1.similarityScore }
+    }
+
+    private func sortGroupWithFavoritesFirst(_ group: SimilarPhotoGroup) -> SimilarPhotoGroup {
+        let sortedPhotos = group.photos.sorted { photo1, photo2 in
+            // 1. Favoriler önce
+            if photo1.isFavorite != photo2.isFavorite {
+                return photo1.isFavorite
+            }
+
+            // 2. Yüksek çözünürlük önce
+            let resolution1 = photo1.pixelWidth * photo1.pixelHeight
+            let resolution2 = photo2.pixelWidth * photo2.pixelHeight
+            if resolution1 != resolution2 {
+                return resolution1 > resolution2
+            }
+
+            // 3. Yeni tarih önce
+            if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
+                return date1 > date2
+            }
+
+            return false
+        }
+
+        return SimilarPhotoGroup(
+            photos: sortedPhotos,
+            similarityScore: group.similarityScore
+        )
+    }
+
+    // MARK: - Quality Issue Detection
+
+    private func detectQualityIssues(_ photos: [PhotoItem]) {
+        var blurry: [PhotoItem] = []
+        var dark: [PhotoItem] = []
+        var bright: [PhotoItem] = []
+
+        for photo in photos {
+            if photo.isBlurry {
+                blurry.append(photo)
+            }
+            if photo.isTooDark {
+                dark.append(photo)
+            }
+            if photo.isTooBright {
+                bright.append(photo)
+            }
+        }
+
+        // Kalite skoruna göre sırala (en kötü önce)
+        blurryPhotos = blurry.sorted { ($0.blurScore ?? 0) < ($1.blurScore ?? 0) }
+        darkPhotos = dark.sorted { ($0.brightnessScore ?? 1) < ($1.brightnessScore ?? 1) }
+        brightPhotos = bright.sorted { ($0.brightnessScore ?? 0) > ($1.brightnessScore ?? 0) }
     }
 
     // MARK: - Metadata Filtering
@@ -271,6 +407,30 @@ class SimilarityManager: ObservableObject {
 
     func getTotalSimilarPhotosCount() -> Int {
         return similarGroups.reduce(0) { $0 + $1.count }
+    }
+
+    func getTotalDuplicatesCount() -> Int {
+        return duplicateGroups.reduce(0) { $0 + $1.count }
+    }
+
+    func getTotalScreenshotsCount() -> Int {
+        return screenshotGroups.reduce(0) { $0 + $1.count }
+    }
+
+    func getAllGroups() -> [SimilarPhotoGroup] {
+        return duplicateGroups + screenshotGroups + similarGroups
+    }
+
+    func getTotalQualityIssuesCount() -> Int {
+        return blurryPhotos.count + darkPhotos.count + brightPhotos.count
+    }
+
+    func getTotalVideosCount() -> Int {
+        return videos.count
+    }
+
+    func getTotalLivePhotosCount() -> Int {
+        return livePhotos.count
     }
 
     func getPotentialSpaceSavings() -> Int64 {

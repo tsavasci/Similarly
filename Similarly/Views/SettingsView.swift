@@ -15,10 +15,79 @@ struct SettingsView: View {
     @AppStorage("locationThreshold") private var locationThreshold: Double = 100.0
     @AppStorage("autoSelectOldest") private var autoSelectOldest: Bool = true
     @AppStorage("showAdvancedSettings") private var showAdvancedSettings: Bool = false
+    @AppStorage("blurThreshold") private var blurThreshold: Double = 100.0
+    @AppStorage("darknessThreshold") private var darknessThreshold: Double = 0.2
+    @AppStorage("brightnessThreshold") private var brightnessThreshold: Double = 0.9
+
+    @State private var selectedPreset: PresetType? = nil
+
+    enum PresetType: String, CaseIterable {
+        case precise = "Hassas"
+        case balanced = "Dengeli"
+        case flexible = "Esnek"
+
+        var description: String {
+            switch self {
+            case .precise:
+                return "Sadece çok benzer fotoğrafları bulur"
+            case .balanced:
+                return "İyi bir denge (önerilen)"
+            case .flexible:
+                return "Daha fazla benzer fotoğraf bulur"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .precise:
+                return "scope"
+            case .balanced:
+                return "slider.horizontal.3"
+            case .flexible:
+                return "wand.and.stars"
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
             Form {
+                // Hazır Ayarlar
+                Section {
+                    ForEach(PresetType.allCases, id: \.self) { preset in
+                        Button(action: {
+                            applyPreset(preset)
+                            selectedPreset = preset
+                        }) {
+                            HStack {
+                                Image(systemName: preset.icon)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 30)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(preset.rawValue)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    Text(preset.description)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                if selectedPreset == preset {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Hızlı Ayarlar")
+                } footer: {
+                    Text("Manuel ayarlara göre daha hızlı başlangıç için hazır profiller")
+                }
+
                 // Genel Ayarlar
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
@@ -84,6 +153,66 @@ struct SettingsView: View {
                     Text("Metadata Filtreleri")
                 } footer: {
                     Text("Bu değerler fotoğrafları gruplamadan önce ön filtreleme için kullanılır")
+                }
+
+                // Kalite Kontrol Ayarları
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Bulanıklık Eşiği")
+                            Spacer()
+                            Text("\(Int(blurThreshold))")
+                                .foregroundColor(.secondary)
+                        }
+
+                        Slider(value: $blurThreshold, in: 50...200, step: 10)
+                            .tint(.orange)
+
+                        Text("Daha yüksek değer daha az bulanık fotoğraf bulur")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Karanlık Eşiği")
+                            Spacer()
+                            Text("\(Int(darknessThreshold * 100))%")
+                                .foregroundColor(.secondary)
+                        }
+
+                        Slider(value: $darknessThreshold, in: 0.1...0.4, step: 0.05)
+                            .tint(.purple)
+
+                        Text("Altındaki parlaklık değeri çok karanlık sayılır")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Parlaklık Eşiği")
+                            Spacer()
+                            Text("\(Int(brightnessThreshold * 100))%")
+                                .foregroundColor(.secondary)
+                        }
+
+                        Slider(value: $brightnessThreshold, in: 0.7...1.0, step: 0.05)
+                            .tint(.yellow)
+
+                        Text("Üstündeki parlaklık değeri aşırı parlak sayılır")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    Text("Kalite Kontrol")
+                } footer: {
+                    Text(
+                        "Bu eşikler bulanık, karanlık veya aşırı parlak fotoğrafların tespiti için kullanılır"
+                    )
                 }
 
                 // Kullanıcı Tercihleri
@@ -200,6 +329,41 @@ struct SettingsView: View {
         locationThreshold = 100.0
         autoSelectOldest = true
         showAdvancedSettings = false
+        blurThreshold = 100.0
+        darknessThreshold = 0.2
+        brightnessThreshold = 0.9
+        selectedPreset = .balanced
+    }
+
+    private func applyPreset(_ preset: PresetType) {
+        switch preset {
+        case .precise:
+            // Hassas: Sadece çok benzer olanlar
+            similarityThreshold = 0.95
+            dateThreshold = 3.0
+            locationThreshold = 50.0
+            blurThreshold = 150.0
+            darknessThreshold = 0.15
+            brightnessThreshold = 0.95
+
+        case .balanced:
+            // Dengeli: Varsayılan ayarlar
+            similarityThreshold = 0.85
+            dateThreshold = 5.0
+            locationThreshold = 100.0
+            blurThreshold = 100.0
+            darknessThreshold = 0.2
+            brightnessThreshold = 0.9
+
+        case .flexible:
+            // Esnek: Daha fazla sonuç
+            similarityThreshold = 0.70
+            dateThreshold = 10.0
+            locationThreshold = 200.0
+            blurThreshold = 75.0
+            darknessThreshold = 0.25
+            brightnessThreshold = 0.85
+        }
     }
 }
 

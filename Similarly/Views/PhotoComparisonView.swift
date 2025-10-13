@@ -8,389 +8,506 @@
 import Photos
 import SwiftUI
 
-/// İki fotoğrafı yan yana karşılaştırma görünümü
+/// Tinder tarzı swipe ile fotoğraf karşılaştırma görünümü
 struct PhotoComparisonView: View {
     let photos: [PhotoItem]
     let initialIndex: Int
     let onSelect: (PhotoItem) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var currentIndex: Int
-    @State private var nextIndex: Int
-    @State private var showingMetadata = false
-    @State private var selectedPhoto: PhotoItem?
+    @State private var offset: CGSize = .zero
+    @State private var selectedPhotos = Set<String>()
+    @State private var deletedPhotos = Set<String>()
     @State private var fullImages: [String: UIImage] = [:]
+    @State private var showingMetadata = false
+    @State private var rotation: Double = 0
 
     init(photos: [PhotoItem], initialIndex: Int = 0, onSelect: @escaping (PhotoItem) -> Void) {
         self.photos = photos
         self.initialIndex = initialIndex
         self.onSelect = onSelect
         _currentIndex = State(initialValue: initialIndex)
-        _nextIndex = State(initialValue: min(initialIndex + 1, photos.count - 1))
+    }
+
+    var remainingPhotos: [PhotoItem] {
+        photos.filter { !deletedPhotos.contains($0.id) }
+    }
+
+    var currentPhoto: PhotoItem? {
+        guard currentIndex < remainingPhotos.count else { return nil }
+        return remainingPhotos[currentIndex]
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                // Arka plan
+                LinearGradient(
+                    colors: [Color.purple.opacity(0.3), Color.blue.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Üst bilgi - Hangi fotoğraflar karşılaştırılıyor
-                    HStack {
-                        Text("Fotoğraf \(currentIndex + 1) / \(photos.count)")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal)
+                    // Üst bilgi
+                    VStack(spacing: 8) {
+                        Text("\(remainingPhotos.count - currentIndex) fotoğraf kaldı")
+                            .font(.headline)
+                            .foregroundColor(.primary)
 
-                        Spacer()
+                        // Progress bar
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(height: 4)
+                                    .cornerRadius(2)
 
-                        Text("Fotoğraf \(nextIndex + 1) / \(photos.count)")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal)
-                    }
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.5))
-
-                    // Fotoğraf karşılaştırma alanı
-                    if horizontalSizeClass == .regular {
-                        // iPad veya landscape - Yan yana
-                        HStack(spacing: 0) {
-                            photoView(for: photos[currentIndex], index: currentIndex)
-                            Divider().background(Color.white)
-                            photoView(for: photos[nextIndex], index: nextIndex)
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [.blue, .purple],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(
+                                        width: geometry.size.width
+                                            * CGFloat(currentIndex)
+                                            / CGFloat(max(remainingPhotos.count - 1, 1)),
+                                        height: 4
+                                    )
+                                    .cornerRadius(2)
+                            }
                         }
-                    } else {
-                        // iPhone portrait - Üst üste
-                        VStack(spacing: 0) {
-                            photoView(for: photos[currentIndex], index: currentIndex)
-                            Divider().background(Color.white)
-                            photoView(for: photos[nextIndex], index: nextIndex)
+                        .frame(height: 4)
+                        .padding(.horizontal)
+                    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+
+                    Spacer()
+
+                    // Ana kart alanı
+                    ZStack {
+                        if currentPhoto == nil {
+                            // Tüm fotoğraflar değerlendirildi
+                            completionView
+                        } else {
+                            // Kart stack
+                            ForEach(
+                                Array(
+                                    remainingPhotos[
+                                        currentIndex..<min(currentIndex + 2, remainingPhotos.count)
+                                    ]
+                                    .enumerated()), id: \.element.id
+                            ) { index, photo in
+                                photoCard(for: photo, stackIndex: index)
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 20)
+
+                    Spacer()
 
                     // Alt kontroller
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
                         // Metadata toggle
-                        Button(action: {
-                            withAnimation {
-                                showingMetadata.toggle()
-                            }
-                        }) {
-                            HStack {
-                                Image(
-                                    systemName: showingMetadata ? "info.circle.fill" : "info.circle"
-                                )
-                                Text(showingMetadata ? "Bilgileri Gizle" : "Bilgileri Göster")
-                            }
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(20)
-                        }
-
-                        if showingMetadata {
-                            metadataComparison
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
-
-                        // Navigasyon butonları
-                        HStack(spacing: 20) {
-                            Button(action: previousPair) {
+                        if currentPhoto != nil {
+                            Button(action: {
+                                withAnimation {
+                                    showingMetadata.toggle()
+                                }
+                            }) {
                                 HStack {
-                                    Image(systemName: "chevron.left")
-                                    Text("Önceki")
+                                    Image(
+                                        systemName: showingMetadata
+                                            ? "info.circle.fill" : "info.circle"
+                                    )
+                                    Text(showingMetadata ? "Bilgileri Gizle" : "Bilgileri Göster")
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(currentIndex > 0 ? Color.blue : Color.gray.opacity(0.3))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                            }
-                            .disabled(currentIndex == 0)
-
-                            Button(action: nextPair) {
-                                HStack {
-                                    Text("Sonraki")
-                                    Image(systemName: "chevron.right")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    nextIndex < photos.count - 1
-                                        ? Color.blue : Color.gray.opacity(0.3)
-                                )
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                            }
-                            .disabled(nextIndex >= photos.count - 1)
-                        }
-                        .padding(.horizontal)
-
-                        // Seçim butonları
-                        HStack(spacing: 12) {
-                            Button(action: {
-                                selectPhoto(photos[currentIndex])
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.title2)
-                                    Text("Sol/Üst")
-                                        .font(.caption)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    selectedPhoto?.id == photos[currentIndex].id
-                                        ? Color.green
-                                        : Color.white.opacity(0.2)
-                                )
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(Color.white.opacity(0.8))
+                                .cornerRadius(20)
                             }
 
-                            Button(action: {
-                                selectPhoto(photos[nextIndex])
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.title2)
-                                    Text("Sağ/Alt")
-                                        .font(.caption)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    selectedPhoto?.id == photos[nextIndex].id
-                                        ? Color.green
-                                        : Color.white.opacity(0.2)
-                                )
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                            }
-
-                            Button(action: {
-                                selectBothPhotos()
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: "square.stack.fill")
-                                        .font(.title2)
-                                    Text("İkisi de")
-                                        .font(.caption)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white.opacity(0.2))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
+                            if showingMetadata, let photo = currentPhoto {
+                                metadataView(for: photo)
+                                    .transition(.move(edge: .bottom).combined(with: .opacity))
                             }
                         }
-                        .padding(.horizontal)
+
+                        // Swipe butonları
+                        if currentPhoto != nil {
+                            HStack(spacing: 40) {
+                                // Sil butonu
+                                Button(action: {
+                                    swipeLeft()
+                                }) {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 30, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 70, height: 70)
+                                            .background(
+                                                Circle()
+                                                    .fill(Color.red)
+                                                    .shadow(color: .red.opacity(0.3), radius: 10)
+                                            )
+
+                                        Text("Sil")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+
+                                // Geri al butonu
+                                Button(action: {
+                                    undoLastAction()
+                                }) {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "arrow.uturn.backward")
+                                            .font(.system(size: 24, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 60, height: 60)
+                                            .background(
+                                                Circle()
+                                                    .fill(Color.gray.opacity(0.6))
+                                                    .shadow(
+                                                        color: .gray.opacity(0.3), radius: 10)
+                                            )
+
+                                        Text("Geri")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                                .disabled(currentIndex == 0 && deletedPhotos.isEmpty)
+                                .opacity(currentIndex == 0 && deletedPhotos.isEmpty ? 0.5 : 1)
+
+                                // Tut butonu
+                                Button(action: {
+                                    swipeRight()
+                                }) {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "heart.fill")
+                                            .font(.system(size: 30, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 70, height: 70)
+                                            .background(
+                                                Circle()
+                                                    .fill(Color.green)
+                                                    .shadow(color: .green.opacity(0.3), radius: 10)
+                                            )
+
+                                        Text("Tut")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 20)
+                        }
                     }
-                    .padding(.vertical, 16)
-                    .background(Color.black.opacity(0.8))
+                    .padding(.bottom, 30)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Kapat") {
+                        finalizeSelections()
                         dismiss()
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .principal) {
                     Text("Karşılaştır")
-                        .foregroundColor(.white)
-                        .fontWeight(.semibold)
+                        .font(.headline)
+                        .foregroundColor(.primary)
                 }
             }
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
         }
         .onAppear {
-            loadFullImages()
+            loadImages()
         }
     }
 
-    // MARK: - Photo View
+    // MARK: - Photo Card
     @ViewBuilder
-    private func photoView(for photo: PhotoItem, index: Int) -> some View {
-        ZStack {
-            if let fullImage = fullImages[photo.id] {
-                Image(uiImage: fullImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let thumbnail = photo.thumbnail,
-                let uiImage = thumbnail.toUIImage()
-            {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .overlay(
-                        ProgressView()
-                            .tint(.white)
-                    )
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .overlay(
-                        ProgressView()
-                            .tint(.white)
-                    )
-            }
-
-            // Seçim göstergesi
-            if selectedPhoto?.id == photo.id {
-                VStack {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.green)
-                            .background(
-                                Circle()
-                                    .fill(Color.white)
-                                    .padding(4)
+    private func photoCard(for photo: PhotoItem, stackIndex: Int) -> some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                ZStack {
+                    // Fotoğraf
+                    if let fullImage = fullImages[photo.id] {
+                        Image(uiImage: fullImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(
+                                width: geometry.size.width,
+                                height: geometry.size.height
                             )
-                            .padding()
+                            .clipped()
+                    } else if let thumbnail = photo.thumbnail,
+                        let uiImage = thumbnail.toUIImage()
+                    {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(
+                                width: geometry.size.width,
+                                height: geometry.size.height
+                            )
+                            .clipped()
+                            .overlay(
+                                ProgressView()
+                                    .tint(.white)
+                            )
                     }
-                    Spacer()
+
+                    // Swipe overlay (sadece en üstteki kart için)
+                    if stackIndex == 0 {
+                        // Sil overlay (kırmızı)
+                        if offset.width < -50 {
+                            Color.red.opacity(Double(abs(offset.width) / 150))
+                                .overlay(
+                                    VStack {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 60))
+                                            .foregroundColor(.white)
+                                        Text("SİL")
+                                            .font(.title)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                    }
+                                )
+                        }
+
+                        // Tut overlay (yeşil)
+                        if offset.width > 50 {
+                            Color.green.opacity(Double(offset.width / 150))
+                                .overlay(
+                                    VStack {
+                                        Image(systemName: "heart.circle.fill")
+                                            .font(.system(size: 60))
+                                            .foregroundColor(.white)
+                                        Text("TUT")
+                                            .font(.title)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                    }
+                                )
+                        }
+                    }
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(Color.white)
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .offset(stackIndex == 0 ? offset : .zero)
+            .scaleEffect(stackIndex == 0 ? 1 : 0.95)
+            .rotationEffect(.degrees(stackIndex == 0 ? rotation : 0))
+            .opacity(stackIndex == 0 ? 1 : 0.5)
+            .gesture(
+                stackIndex == 0
+                    ? DragGesture()
+                        .onChanged { gesture in
+                            offset = gesture.translation
+                            rotation = Double(gesture.translation.width / 20)
+                        }
+                        .onEnded { gesture in
+                            if abs(gesture.translation.width) > 100 {
+                                // Swipe tamamlandı
+                                if gesture.translation.width > 0 {
+                                    swipeRight()
+                                } else {
+                                    swipeLeft()
+                                }
+                            } else {
+                                // Swipe iptal, kartı geri getir
+                                withAnimation(.spring()) {
+                                    offset = .zero
+                                    rotation = 0
+                                }
+                            }
+                        }
+                    : nil
+            )
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 40)
     }
 
-    // MARK: - Metadata Comparison
-    private var metadataComparison: some View {
-        HStack(spacing: 0) {
-            // Sol/Üst fotoğraf metadata
-            VStack(alignment: .leading, spacing: 6) {
-                metadataRow(
-                    icon: "calendar",
-                    label: "Tarih",
-                    value: formatDate(photos[currentIndex].creationDate)
-                )
-                metadataRow(
-                    icon: "arrow.up.left.and.arrow.down.right",
-                    label: "Boyut",
-                    value:
-                        "\(photos[currentIndex].pixelWidth) × \(photos[currentIndex].pixelHeight)"
-                )
-                metadataRow(
-                    icon: "doc",
-                    label: "Dosya",
-                    value: formatFileSize(photos[currentIndex])
-                )
-                if let location = photos[currentIndex].location {
-                    metadataRow(
-                        icon: "location.fill",
-                        label: "Konum",
-                        value: "Var"
-                    )
+    // MARK: - Metadata View
+    private func metadataView(for photo: PhotoItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "calendar")
+                    .foregroundColor(.blue)
+                    .frame(width: 24)
+                Text(formatDate(photo.creationDate))
+                    .font(.subheadline)
+            }
+
+            HStack {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .foregroundColor(.blue)
+                    .frame(width: 24)
+                Text("\(photo.pixelWidth) × \(photo.pixelHeight)")
+                    .font(.subheadline)
+            }
+
+            HStack {
+                Image(systemName: "doc")
+                    .foregroundColor(.blue)
+                    .frame(width: 24)
+                Text(formatFileSize(photo))
+                    .font(.subheadline)
+            }
+
+            if photo.location != nil {
+                HStack {
+                    Image(systemName: "location.fill")
+                        .foregroundColor(.blue)
+                        .frame(width: 24)
+                    Text("Konum var")
+                        .font(.subheadline)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(12)
-
-            Spacer().frame(width: 8)
-
-            // Sağ/Alt fotoğraf metadata
-            VStack(alignment: .leading, spacing: 6) {
-                metadataRow(
-                    icon: "calendar",
-                    label: "Tarih",
-                    value: formatDate(photos[nextIndex].creationDate)
-                )
-                metadataRow(
-                    icon: "arrow.up.left.and.arrow.down.right",
-                    label: "Boyut",
-                    value: "\(photos[nextIndex].pixelWidth) × \(photos[nextIndex].pixelHeight)"
-                )
-                metadataRow(
-                    icon: "doc",
-                    label: "Dosya",
-                    value: formatFileSize(photos[nextIndex])
-                )
-                if let location = photos[nextIndex].location {
-                    metadataRow(
-                        icon: "location.fill",
-                        label: "Konum",
-                        value: "Var"
-                    )
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(12)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.white.opacity(0.9))
+        .cornerRadius(12)
         .padding(.horizontal)
     }
 
-    private func metadataRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(.blue)
-                .frame(width: 20)
+    // MARK: - Completion View
+    private var completionView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.green)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.6))
-                Text(value)
-                    .font(.caption)
+            Text("Tamamlandı!")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text("Tüm fotoğrafları değerlendirdin")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text("\(selectedPhotos.count) fotoğraf tutulacak")
+                }
+
+                HStack {
+                    Image(systemName: "trash.circle.fill")
+                        .foregroundColor(.red)
+                    Text("\(deletedPhotos.count) fotoğraf silinecek")
+                }
+            }
+            .font(.headline)
+            .padding()
+            .background(Color.white.opacity(0.9))
+            .cornerRadius(12)
+
+            Button(action: {
+                finalizeSelections()
+                dismiss()
+            }) {
+                Text("Tamam")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
                     .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+        }
+        .padding()
+    }
+
+    // MARK: - Actions
+    private func swipeLeft() {
+        guard let photo = currentPhoto else { return }
+
+        withAnimation(.spring()) {
+            offset = CGSize(width: -500, height: 0)
+            rotation = -20
+        }
+
+        // Fotoğrafı silinecekler listesine ekle
+        deletedPhotos.insert(photo.id)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            offset = .zero
+            rotation = 0
+            currentIndex += 1
+            loadImages()
+        }
+    }
+
+    private func swipeRight() {
+        guard let photo = currentPhoto else { return }
+
+        withAnimation(.spring()) {
+            offset = CGSize(width: 500, height: 0)
+            rotation = 20
+        }
+
+        // Fotoğrafı tutulacaklar listesine ekle
+        selectedPhotos.insert(photo.id)
+        onSelect(photo)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            offset = .zero
+            rotation = 0
+            currentIndex += 1
+            loadImages()
+        }
+    }
+
+    private func undoLastAction() {
+        guard currentIndex > 0 else { return }
+
+        withAnimation(.spring()) {
+            currentIndex -= 1
+            let previousPhoto = remainingPhotos[currentIndex]
+            deletedPhotos.remove(previousPhoto.id)
+            selectedPhotos.remove(previousPhoto.id)
+        }
+    }
+
+    private func finalizeSelections() {
+        // Seçili olmayanları otomatik olarak silinecekler listesine ekle
+        for photo in photos {
+            if !selectedPhotos.contains(photo.id) && !deletedPhotos.contains(photo.id) {
+                deletedPhotos.insert(photo.id)
             }
         }
     }
 
-    // MARK: - Actions
-    private func previousPair() {
-        guard currentIndex > 0 else { return }
-        withAnimation {
-            currentIndex -= 1
-            nextIndex = min(currentIndex + 1, photos.count - 1)
-            selectedPhoto = nil
-        }
-        loadFullImages()
-    }
-
-    private func nextPair() {
-        guard nextIndex < photos.count - 1 else { return }
-        withAnimation {
-            currentIndex = nextIndex
-            nextIndex = min(currentIndex + 1, photos.count - 1)
-            selectedPhoto = nil
-        }
-        loadFullImages()
-    }
-
-    private func selectPhoto(_ photo: PhotoItem) {
-        withAnimation {
-            selectedPhoto = photo
-        }
-        onSelect(photo)
-    }
-
-    private func selectBothPhotos() {
-        // İkisi de seçildiğinde hiçbirini silme
-        selectedPhoto = nil
-    }
-
     // MARK: - Helper Functions
-    private func loadFullImages() {
-        let photosToLoad = [photos[currentIndex], photos[nextIndex]]
+    private func loadImages() {
+        // Mevcut ve bir sonraki fotoğrafı yükle
+        let photosToLoad = remainingPhotos[
+            currentIndex..<min(currentIndex + 2, remainingPhotos.count)]
 
         for photo in photosToLoad {
             guard fullImages[photo.id] == nil else { continue }
@@ -401,7 +518,7 @@ struct PhotoComparisonView: View {
 
             PHImageManager.default().requestImage(
                 for: photo.asset,
-                targetSize: PHImageManagerMaximumSize,
+                targetSize: CGSize(width: 1024, height: 1024),
                 contentMode: .aspectFit,
                 options: options
             ) { image, _ in
@@ -430,7 +547,6 @@ struct PhotoComparisonView: View {
             formatter.countStyle = .file
             return formatter.string(fromByteCount: fileSize)
         }
-        // Fallback tahmini
         let estimatedSize = Int64(photo.pixelWidth * photo.pixelHeight) / 5
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
