@@ -231,6 +231,8 @@ struct SimilarPhotoDetailView: View {
 
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
+    @State private var showingComparison = false
+    @State private var comparisonStartIndex = 0
     @Environment(\.dismiss) private var dismiss
 
     private let columns = [
@@ -255,7 +257,7 @@ struct SimilarPhotoDetailView: View {
             // Fotoğraf grid'i
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 15) {
-                    ForEach(group.photos) { photo in
+                    ForEach(Array(group.photos.enumerated()), id: \.element.id) { index, photo in
                         PhotoGridItem(
                             photo: photo,
                             isSelected: selectedPhotos.contains(photo.id),
@@ -267,13 +269,32 @@ struct SimilarPhotoDetailView: View {
                                 }
                             },
                             onLongPress: {
-                                showingFullImage = photo
+                                comparisonStartIndex = index
+                                showingComparison = true
                             }
                         )
                     }
                 }
                 .padding()
             }
+
+            // Karşılaştırma butonu
+            Button(action: {
+                comparisonStartIndex = 0
+                showingComparison = true
+            }) {
+                HStack {
+                    Image(systemName: "arrow.left.and.right.square")
+                    Text("Fotoğrafları Karşılaştır")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue.opacity(0.2))
+                .foregroundColor(.blue)
+                .cornerRadius(12)
+            }
+            .padding(.horizontal)
 
             // Alt butonlar
             HStack(spacing: 15) {
@@ -341,6 +362,16 @@ struct SimilarPhotoDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(item: $showingFullImage) { photo in
             FullImageView(photo: photo)
+        }
+        .fullScreenCover(isPresented: $showingComparison) {
+            PhotoComparisonView(
+                photos: group.photos,
+                initialIndex: comparisonStartIndex,
+                onSelect: { photo in
+                    // Seçilen fotoğraf dışındaki tüm fotoğrafları seçili yap (silinmek üzere)
+                    selectedPhotos = Set(group.photos.filter { $0.id != photo.id }.map { $0.id })
+                }
+            )
         }
     }
 
