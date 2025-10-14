@@ -47,7 +47,7 @@ Durum: MVP Hazır - Test Edilmeye Hazır
 - ✅ **FullImageView** - Tam boyut önizleme
 
 ### 5. ⚙️ Ayarlar ve Özelleştirme
-- ✅ Benzerlik eşiği ayarı (%50-%100)
+- ✅ Benzerlik eşiği ayarı (%80-%100)
 - ✅ Tarih yakınlığı ayarı (1-60 saniye)
 - ✅ Lokasyon yakınlığı ayarı (10-1000 metre)
 - ✅ Otomatik seçim tercihleri

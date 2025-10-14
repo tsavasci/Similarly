@@ -40,7 +40,7 @@ Similarly, iPhone'unuzdaki fotoğraf kütüphanesinde bulunan benzer fotoğrafla
 #### 3. 🔍 Benzer Fotoğraf Bulma
 - Perceptual Hash (pHash) algoritması
 - 64-bin histogram karşılaştırması
-- Ayarlanabilir benzerlik eşiği (%50-%100)
+- Ayarlanabilir benzerlik eşiği (%80-%100)
 - Akıllı gruplama ve skorlama
 
 #### 4. ⚠️ Kalite Sorunları Tespiti
@@ -75,7 +75,7 @@ Similarly, iPhone'unuzdaki fotoğraf kütüphanesinde bulunan benzer fotoğrafla
 **3 Hazır Preset:**
 - 🔭 **Hassas** (%95): Sadece çok benzer olanları bul
 - ⚖️ **Dengeli** (%85): Önerilen ayar (varsayılan)
-- ✨ **Esnek** (%70): Daha fazla sonuç
+- ✨ **Esnek** (%80): Daha fazla sonuç
 
 **Manuel Kontroller:**
 - Benzerlik eşiği slider
@@ -331,13 +331,13 @@ Similarly/
 |--------|-----------|-------|----------|------------|-------------------|
 | 🔭 Hassas | %95 | 3s | 50m | 150 | Sadece çok benzer olanlar |
 | ⚖️ Dengeli | %85 | 5s | 100m | 100 | Günlük kullanım (önerilen) |
-| ✨ Esnek | %70 | 10s | 200m | 75 | Maksimum temizlik |
+| ✨ Esnek | %80 | 10s | 200m | 75 | Maksimum temizlik |
 
 ### Manuel Ayarlar
 
 | Ayar | Aralık | Varsayılan | Açıklama |
 |------|--------|-----------|----------|
-| Benzerlik Eşiği | %50-%100 | %85 | Minimum benzerlik skoru |
+| Benzerlik Eşiği | %80-%100 | %85 | Minimum benzerlik skoru |
 | Tarih Yakınlığı | 1-60s | 5s | Seri çekim toleransı |
 | Lokasyon Yakınlığı | 10-1000m | 100m | GPS filtreleme mesafesi |
 | Bulanıklık Eşiği | 50-200 | 100 | Laplacian variance limiti |
@@ -352,7 +352,7 @@ Similarly/
 ```
 Durum: Tatilde 500 fotoğraf çektiniz, çoğu benzer
 Çözüm:
-1. "Esnek" preset seçin (%70)
+1. "Esnek" preset seçin (%80)
 2. Tarih ve lokasyon filtrelerini kullanın
 3. Her gruptan en iyi fotoğrafı tutun
 Sonuç: ~300 fotoğraf kalır, 5GB tasarruf

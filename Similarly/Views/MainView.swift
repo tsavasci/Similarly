@@ -6,12 +6,14 @@
 //
 
 import Photos
+import SwiftData
 import SwiftUI
 
 /// Ana uygulama görünümü - fotoğraf kütüphanesine erişim ve benzer fotoğraf bulma
 struct MainView: View {
     @StateObject private var photoManager = PhotoLibraryManager()
     @StateObject private var similarityManager = SimilarityManager()
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showingOnboarding = false
     @State private var showingSimilarPhotos = false
@@ -191,14 +193,17 @@ struct MainView: View {
             .fullScreenCover(isPresented: $showingOnboarding) {
                 OnboardingView(isPresented: $showingOnboarding)
             }
+            }
             .onAppear {
                 if !hasSeenOnboarding {
                     showingOnboarding = true
                 }
+                // ModelContext'i PhotoLibraryManager'a set et
+                photoManager.modelContext = modelContext
             }
         }
     }
-}
+
 
 // MARK: - Stat Card Component
 struct StatCard: View {

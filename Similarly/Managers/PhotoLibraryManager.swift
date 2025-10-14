@@ -9,7 +9,31 @@ import Combine
 import CoreImage
 import Foundation
 import Photos
+import SwiftData
 import UIKit
+
+// MARK: - Helper Types
+
+/// Sendable data structure for processed photo information
+struct ProcessedPhotoData: Sendable {
+    let id: String
+    let pHash: String?
+    let histogram: [Double]
+    let blurScore: Double
+    let brightnessScore: Double
+    let cachedFileSize: Int64?
+    let modificationDate: Date
+
+    init(from photo: ProcessedPhoto) {
+        self.id = photo.id
+        self.pHash = photo.pHash
+        self.histogram = photo.histogram ?? []
+        self.blurScore = photo.blurScore ?? 0.0
+        self.brightnessScore = photo.brightnessScore ?? 0.0
+        self.cachedFileSize = photo.cachedFileSize
+        self.modificationDate = photo.modificationDate ?? Date.distantPast
+    }
+}
 
 /// Fotoğraf kütüphanesine erişim ve işlemleri yöneten sınıf
 @MainActor
@@ -25,7 +49,10 @@ class PhotoLibraryManager: ObservableObject {
     private let processingQueue = DispatchQueue(
         label: "com.similarly.photoprocessing", attributes: .concurrent)
 
-    init() {
+    var modelContext: ModelContext?
+
+    init(modelContext: ModelContext? = nil) {
+        self.modelContext = modelContext
         checkAuthorizationStatus()
     }
 
@@ -52,32 +79,155 @@ class PhotoLibraryManager: ObservableObject {
         isProcessing = true
         processingProgress = 0.0
 
+        // Load processed photos from database first (main thread for SwiftData safety)
+        let processedPhotosData = await MainActor.run {
+            return self.loadProcessedPhotosFromDatabase()
+        }
+
+        // Configure fetch options
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-
-        // Fotoğraf ve videoları al
+        fetchOptions.includeAssetSourceTypes = [.typeUserLibrary, .typeiTunesSynced, .typeCloudShared]
         fetchOptions.predicate = NSPredicate(
             format: "mediaType = %d OR mediaType = %d",
             PHAssetMediaType.image.rawValue,
-            PHAssetMediaType.video.rawValue)
+            PHAssetMediaType.video.rawValue
+        )
 
         let fetchResult = PHAsset.fetchAssets(with: fetchOptions)
-        var tempPhotos: [PhotoItem] = []
+        var allPhotos: [PhotoItem] = []
 
-        fetchResult.enumerateObjects { asset, _, _ in
-            let photo = PhotoItem(id: asset.localIdentifier, asset: asset)
-            tempPhotos.append(photo)
+        // Process in batches to avoid memory pressure
+        let batchSize = 20
+        let totalCount = fetchResult.count
+
+        for i in stride(from: 0, to: totalCount, by: batchSize) {
+            let endIndex = min(i + batchSize, totalCount)
+            var batchPhotos: [PhotoItem] = []
+
+            // Process each asset in the current batch
+            for j in i..<endIndex {
+                let asset = fetchResult.object(at: j)
+
+                // Get file size on background thread
+                var cachedSize: Int64?
+                if let resource = PHAssetResource.assetResources(for: asset).first,
+                   let fileSize = resource.value(forKey: "fileSize") as? Int64 {
+                    cachedSize = fileSize
+                }
+
+                // Create photo item with basic info
+                if let processedData = processedPhotosData[asset.localIdentifier],
+                   asset.modificationDate == processedData.modificationDate {
+                    let photo = PhotoItem(
+                        id: asset.localIdentifier,
+                        asset: asset,
+                        thumbnail: nil,
+                        pHash: processedData.pHash,
+                        histogram: processedData.histogram.map { CGFloat($0) },
+                        blurScore: processedData.blurScore,
+                        brightnessScore: processedData.brightnessScore,
+                        cachedFileSize: processedData.cachedFileSize ?? cachedSize
+                    )
+                    batchPhotos.append(photo)
+                } else {
+                    let photo = PhotoItem(
+                        id: asset.localIdentifier,
+                        asset: asset,
+                        cachedFileSize: cachedSize
+                    )
+                    batchPhotos.append(photo)
+                }
+            }
+
+            // Update the main array and UI
+            await MainActor.run {
+                allPhotos.append(contentsOf: batchPhotos)
+                self.photos = allPhotos
+                self.processingProgress = Double(allPhotos.count) / Double(totalCount)
+
+                // Log progress every 5 batches to avoid spamming
+                if i % (batchSize * 5) == 0 {
+                    print("🔄 Processed \(allPhotos.count) of \(totalCount) photos")
+                }
+            }
         }
 
-        photos = tempPhotos
-        let imageCount = tempPhotos.filter { $0.mediaType == .image }.count
-        let videoCount = tempPhotos.filter { $0.mediaType == .video }.count
-        print("📸 \(imageCount) fotoğraf bulundu")
-        if videoCount > 0 {
-            print("🎥 \(videoCount) video bulundu")
+        // Final update on main thread
+        await MainActor.run {
+            self.isProcessing = false
+            self.processingProgress = 1.0
+
+            // Log final statistics
+            let imageCount = allPhotos.filter { $0.mediaType == .image }.count
+            let videoCount = allPhotos.filter { $0.mediaType == .video }.count
+            let alreadyProcessed = allPhotos.filter { $0.pHash != nil }.count
+            let needsProcessing = imageCount - alreadyProcessed
+
+            print("✅ Photo library loaded successfully")
+            print("📊 Statistics:")
+            print("   - 📸 \(imageCount) photos")
+            if videoCount > 0 {
+                print("   - 🎥 \(videoCount) videos")
+            }
+            if alreadyProcessed > 0 {
+                print("   - 💾 \(alreadyProcessed) photos loaded from database")
+            }
+            if needsProcessing > 0 {
+                print("   - 🔄 \(needsProcessing) new photos to process")
+                Task {
+                    await self.processPhotos()
+                }
+            } else {
+                print("   - 🎉 All photos are up to date")
+            }
+        }
+    }
+
+    // MARK: - Database Operations
+
+    private func loadProcessedPhotosFromDatabase() -> [String: ProcessedPhotoData] {
+        guard let context = modelContext else { return [:] }
+
+        let descriptor = FetchDescriptor<ProcessedPhoto>()
+        guard let results = try? context.fetch(descriptor) else {
+            return [:]
         }
 
-        await processPhotos()
+        var dict: [String: ProcessedPhotoData] = [:]
+        for photo in results {
+            dict[photo.id] = ProcessedPhotoData(from: photo)
+        }
+        return dict
+    }
+
+    private func saveProcessedPhoto(_ photo: PhotoItem) async {
+        guard let context = modelContext else { return }
+
+        // Varsa güncelle, yoksa ekle
+        let photoId = photo.id
+        let descriptor = FetchDescriptor<ProcessedPhoto>(
+            predicate: #Predicate { processedPhoto in
+                processedPhoto.id == photoId
+            }
+        )
+        
+        if let existing = try? context.fetch(descriptor).first {
+            // Güncelle
+            existing.pHash = photo.pHash
+            existing.histogram = photo.histogram?.map { Double($0) }
+            existing.blurScore = photo.blurScore
+            existing.brightnessScore = photo.brightnessScore
+            existing.cachedFileSize = photo.cachedFileSize
+            existing.lastProcessedDate = Date()
+            existing.modificationDate = photo.modificationDate
+        } else {
+            // Yeni ekle
+            let processed = ProcessedPhoto(from: photo)
+            context.insert(processed)
+        }
+
+        try? context.save()
     }
 
     // MARK: - Processing Photos
@@ -119,9 +269,15 @@ class PhotoLibraryManager: ObservableObject {
                     // Sadece fotoğraflar için analiz yap (video için değil)
                     let mediaType = processedPhoto.asset.mediaType
                     if mediaType == .image {
-                        processedPhoto = await self.computePHash(for: processedPhoto)
-                        processedPhoto = await self.computeHistogram(for: processedPhoto)
-                        processedPhoto = await self.analyzeQuality(for: processedPhoto)
+                        // Sadece işlenmemiş fotoğrafları işle
+                        if processedPhoto.pHash == nil {
+                            processedPhoto = await self.computePHash(for: processedPhoto)
+                            processedPhoto = await self.computeHistogram(for: processedPhoto)
+                            processedPhoto = await self.analyzeQuality(for: processedPhoto)
+
+                            // Veritabanına kaydet
+                            await self.saveProcessedPhoto(processedPhoto)
+                        }
                     }
 
                     return (startIndex + index, processedPhoto)

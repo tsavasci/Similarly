@@ -98,12 +98,14 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
 
-                        Slider(value: $similarityThreshold, in: 0.5...1.0, step: 0.05)
+                        Slider(value: $similarityThreshold, in: 0.80...1.0, step: 0.05)
                             .tint(.blue)
 
-                        Text("Fotoğrafların ne kadar benzer olması gerektiğini belirler")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        Text(
+                            "Fotoğrafların ne kadar benzer olması gerektiğini belirler (minimum %80)"
+                        )
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
@@ -357,7 +359,7 @@ struct SettingsView: View {
 
         case .flexible:
             // Esnek: Daha fazla sonuç
-            similarityThreshold = 0.70
+            similarityThreshold = 0.80
             dateThreshold = 10.0
             locationThreshold = 200.0
             blurThreshold = 75.0

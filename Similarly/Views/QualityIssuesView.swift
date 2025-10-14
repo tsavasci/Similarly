@@ -64,7 +64,8 @@ struct QualityIssuesView: View {
                     onDelete: { photos in
                         photosToDelete = photos
                         showingDeleteConfirmation = true
-                    }
+                    },
+                    similarityManager: similarityManager
                 )
                 .tag(0)
 
@@ -75,7 +76,8 @@ struct QualityIssuesView: View {
                     onDelete: { photos in
                         photosToDelete = photos
                         showingDeleteConfirmation = true
-                    }
+                    },
+                    similarityManager: similarityManager
                 )
                 .tag(1)
 
@@ -86,7 +88,8 @@ struct QualityIssuesView: View {
                     onDelete: { photos in
                         photosToDelete = photos
                         showingDeleteConfirmation = true
-                    }
+                    },
+                    similarityManager: similarityManager
                 )
                 .tag(2)
             }
@@ -126,8 +129,29 @@ struct QualityPhotoGrid: View {
     let photos: [PhotoItem]
     let issueType: QualityIssueType
     let onDelete: ([PhotoItem]) -> Void
+    @ObservedObject var similarityManager: SimilarityManager
 
     @State private var selectedPhotos = Set<String>()
+    @State private var showingFullImage: PhotoItem?
+
+    private func markAsNotIssue(_ photos: [PhotoItem]) {
+        // Haptic feedback
+        let notificationFeedback = UINotificationFeedbackGenerator()
+        notificationFeedback.notificationOccurred(.success)
+
+        // Kalite sorunları listesinden kaldır
+        switch issueType {
+        case .blurry:
+            similarityManager.removeFromBlurryPhotos(photos)
+        case .dark:
+            similarityManager.removeFromDarkPhotos(photos)
+        case .bright:
+            similarityManager.removeFromBrightPhotos(photos)
+        }
+
+        // Seçimi temizle
+        selectedPhotos.removeAll()
+    }
 
     private let columns = [
         GridItem(.flexible()),
@@ -190,6 +214,12 @@ struct QualityPhotoGrid: View {
                                     } else {
                                         selectedPhotos.insert(photo.id)
                                     }
+                                },
+                                onLongPress: {
+                                    // Haptic feedback
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                    impactFeedback.impactOccurred()
+                                    showingFullImage = photo
                                 }
                             )
                         }
@@ -228,29 +258,53 @@ struct QualityPhotoGrid: View {
                     }
                     .padding(.horizontal)
 
-                    // Sil butonu
-                    Button(action: {
-                        let photosToDelete = photos.filter { selectedPhotos.contains($0.id) }
-                        onDelete(photosToDelete)
-                    }) {
-                        HStack {
-                            Image(systemName: "trash.fill")
-                            Text("Seçilenleri Sil (\(selectedPhotos.count))")
-                                .fontWeight(.semibold)
+                    // Aksiyon butonları
+                    HStack(spacing: 12) {
+                        // Kalite Sorunu Yok butonu
+                        Button(action: {
+                            let photosToMark = photos.filter { selectedPhotos.contains($0.id) }
+                            markAsNotIssue(photosToMark)
+                        }) {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text(issueType.notIssueButtonText)
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(selectedPhotos.isEmpty ? Color.gray : Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                        .disabled(selectedPhotos.isEmpty)
+
+                        // Sil butonu
+                        Button(action: {
+                            let photosToDelete = photos.filter { selectedPhotos.contains($0.id) }
+                            onDelete(photosToDelete)
+                        }) {
+                            HStack {
+                                Image(systemName: "trash.fill")
+                                Text("Sil")
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                        }
+                        .disabled(selectedPhotos.isEmpty)
                     }
-                    .disabled(selectedPhotos.isEmpty)
                     .padding(.horizontal)
                 }
                 .padding(.vertical, 16)
                 .background(Color(UIColor.systemBackground))
                 .shadow(color: .black.opacity(0.1), radius: 5, y: -2)
             }
+        }
+        .fullScreenCover(item: $showingFullImage) { photo in
+            FullImageView(photo: photo)
         }
     }
 }
@@ -261,6 +315,7 @@ struct QualityPhotoItem: View {
     let issueType: QualityIssueType
     let isSelected: Bool
     let onTap: () -> Void
+    let onLongPress: () -> Void
 
     var body: some View {
         VStack(spacing: 4) {
@@ -329,6 +384,9 @@ struct QualityPhotoItem: View {
         .onTapGesture {
             onTap()
         }
+        .onLongPressGesture {
+            onLongPress()
+        }
     }
 }
 
@@ -381,6 +439,17 @@ enum QualityIssueType {
             return "Karanlık fotoğraf bulunamadı"
         case .bright:
             return "Aşırı parlak fotoğraf bulunamadı"
+        }
+    }
+
+    var notIssueButtonText: String {
+        switch self {
+        case .blurry:
+            return "Net"
+        case .dark:
+            return "İyi"
+        case .bright:
+            return "İyi"
         }
     }
 

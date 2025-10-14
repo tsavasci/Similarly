@@ -95,7 +95,8 @@ class SimilarityManager: ObservableObject {
         for (index, group) in candidateGroups.enumerated() {
             if group.count > 1 {
                 let similarGroup = await analyzeImageSimilarity(group)
-                if similarGroup.count > 1 {
+                // Sadece %80 ve üzeri benzerlik skoruna sahip grupları ekle
+                if similarGroup.count > 1 && similarGroup.similarityScore >= 0.80 {
                     finalGroups.append(similarGroup)
                 }
             }
@@ -278,7 +279,7 @@ class SimilarityManager: ObservableObject {
             for j in (i + 1)..<photos.count {
                 let score = comparePhotos(photos[i], photos[j])
 
-                if score > 0.7 {  // %70'den fazla benzerlik
+                if score >= 0.80 {  // %80 ve üzeri benzerlik
                     totalScore += score
                     comparisonCount += 1
 
@@ -431,6 +432,22 @@ class SimilarityManager: ObservableObject {
 
     func getTotalLivePhotosCount() -> Int {
         return livePhotos.count
+    }
+
+    // Fotoğrafları kalite sorunları listelerinden kaldır
+    func removeFromBlurryPhotos(_ photos: [PhotoItem]) {
+        let photoIds = Set(photos.map { $0.id })
+        blurryPhotos.removeAll { photoIds.contains($0.id) }
+    }
+
+    func removeFromDarkPhotos(_ photos: [PhotoItem]) {
+        let photoIds = Set(photos.map { $0.id })
+        darkPhotos.removeAll { photoIds.contains($0.id) }
+    }
+
+    func removeFromBrightPhotos(_ photos: [PhotoItem]) {
+        let photoIds = Set(photos.map { $0.id })
+        brightPhotos.removeAll { photoIds.contains($0.id) }
     }
 
     func getPotentialSpaceSavings() -> Int64 {

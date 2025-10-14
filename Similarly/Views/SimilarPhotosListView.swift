@@ -118,38 +118,49 @@ struct SimilarPhotosListView: View {
                                     .foregroundColor(.blue)
                             }
                         ) {
-                            if similarityManager.getTotalVideosCount() > 0 {
-                                HStack {
-                                    Image(systemName: "video.fill")
-                                        .foregroundColor(.blue)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("\(similarityManager.getTotalVideosCount()) video")
-                                            .font(.headline)
-                                        Text("Video analizi yakında eklenecek")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                            NavigationLink {
+                                MediaLibraryView(
+                                    similarityManager: similarityManager,
+                                    photoManager: photoManager
+                                )
+                            } label: {
+                                VStack(spacing: 12) {
+                                    if similarityManager.getTotalVideosCount() > 0 {
+                                        HStack {
+                                            Image(systemName: "video.fill")
+                                                .foregroundColor(.blue)
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(
+                                                    "\(similarityManager.getTotalVideosCount()) video"
+                                                )
+                                                .font(.headline)
+                                                Text("Videoları görüntüle ve yönet")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 8)
                                     }
-                                    Spacer()
-                                }
-                                .padding(.vertical, 8)
-                            }
 
-                            if similarityManager.getTotalLivePhotosCount() > 0 {
-                                HStack {
-                                    Image(systemName: "livephoto")
-                                        .foregroundColor(.purple)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(
-                                            "\(similarityManager.getTotalLivePhotosCount()) Live Photo"
-                                        )
-                                        .font(.headline)
-                                        Text("Live Photos olarak işaretlendi")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                    if similarityManager.getTotalLivePhotosCount() > 0 {
+                                        HStack {
+                                            Image(systemName: "livephoto")
+                                                .foregroundColor(.purple)
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(
+                                                    "\(similarityManager.getTotalLivePhotosCount()) Live Photo"
+                                                )
+                                                .font(.headline)
+                                                Text("Live Photos'ları görüntüle ve yönet")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.vertical, 8)
                                     }
-                                    Spacer()
                                 }
-                                .padding(.vertical, 8)
                             }
                         }
                     }
@@ -213,10 +224,6 @@ struct SimilarPhotosListView: View {
                                     }
 
                                     Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
                                 }
                                 .padding(.vertical, 8)
                             }
@@ -679,51 +686,54 @@ struct PhotoGridItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ZStack(alignment: .topTrailing) {
-                if let thumbnail = photo.thumbnail,
-                    let uiImage = thumbnail.toUIImage()
-                {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 160)
-                        .clipped()
-                        .cornerRadius(12)
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 160)
-                        .cornerRadius(12)
-                        .overlay(
-                            ProgressView()
-                        )
-                }
+            GeometryReader { geometry in
+                ZStack(alignment: .topTrailing) {
+                    if let thumbnail = photo.thumbnail,
+                        let uiImage = thumbnail.toUIImage()
+                    {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .cornerRadius(12)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .cornerRadius(12)
+                            .overlay(
+                                ProgressView()
+                            )
+                    }
 
-                // Favori badge (sol üst)
-                if photo.isFavorite {
-                    VStack {
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.yellow)
-                                .padding(6)
-                                .background(Circle().fill(Color.black.opacity(0.6)))
+                    // Favori badge (sol üst)
+                    if photo.isFavorite {
+                        VStack {
+                            HStack {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.yellow)
+                                    .padding(6)
+                                    .background(Circle().fill(Color.black.opacity(0.6)))
+                                Spacer()
+                            }
                             Spacer()
                         }
-                        Spacer()
-                    }
-                    .padding(8)
-                }
-
-                // Seçim işareti (sağ üst)
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                        .background(Circle().fill(Color.white))
                         .padding(8)
+                    }
+
+                    // Seçim işareti (sağ üst)
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                            .background(Circle().fill(Color.white))
+                            .padding(8)
+                    }
                 }
             }
+            .aspectRatio(1, contentMode: .fit)
 
             // Tarih bilgisi
             HStack {

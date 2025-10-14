@@ -18,10 +18,15 @@ struct PhotoItem: Identifiable, Hashable {
     var histogram: [CGFloat]?
     var blurScore: Double?
     var brightnessScore: Double?
+    var cachedFileSize: Int64?
 
     // Metadata bilgileri
     var creationDate: Date? {
         asset.creationDate
+    }
+
+    var modificationDate: Date? {
+        asset.modificationDate
     }
 
     var location: CLLocation? {
@@ -63,12 +68,9 @@ struct PhotoItem: Identifiable, Hashable {
     }
 
     var fileSize: Int64? {
-        if let resource = PHAssetResource.assetResources(for: asset).first,
-            let fileSize = resource.value(forKey: "fileSize") as? Int64
-        {
-            return fileSize
-        }
-        return nil
+        // Sadece cache'lenmiş değeri dön
+        // Bu değer PhotoLibraryManager.fetchAssets() içinde prefetch edilir
+        return cachedFileSize
     }
 
     var isBlurry: Bool {
@@ -104,7 +106,8 @@ struct PhotoItem: Identifiable, Hashable {
 
     init(
         id: String, asset: PHAsset, thumbnail: CIImage? = nil, pHash: String? = nil,
-        histogram: [CGFloat]? = nil, blurScore: Double? = nil, brightnessScore: Double? = nil
+        histogram: [CGFloat]? = nil, blurScore: Double? = nil, brightnessScore: Double? = nil,
+        cachedFileSize: Int64? = nil
     ) {
         self.id = id
         self.asset = asset
@@ -113,6 +116,7 @@ struct PhotoItem: Identifiable, Hashable {
         self.histogram = histogram
         self.blurScore = blurScore
         self.brightnessScore = brightnessScore
+        self.cachedFileSize = cachedFileSize
     }
 
     // Hashable conformance

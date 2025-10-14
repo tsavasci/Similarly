@@ -223,7 +223,7 @@ xcrun simctl addmedia <SIMULATOR_ID> /path/to/photo.jpg
 
 Sağ üstteki **⚙️** ikonuna tıklayın:
 
-- **Benzerlik Eşiği:** %50 - %100 (varsayılan %85)
+- **Benzerlik Eşiği:** %80 - %100 (varsayılan %85)
 - **Tarih Yakınlığı:** 1 - 60 saniye (varsayılan 5)
 - **Lokasyon Yakınlığı:** 10 - 1000 metre (varsayılan 100)
 - **Otomatik Seçim:** En eski fotoğrafları işaretle
