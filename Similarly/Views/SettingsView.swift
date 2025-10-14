@@ -13,8 +13,6 @@ struct SettingsView: View {
     @AppStorage("similarityThreshold") private var similarityThreshold: Double = 0.85
     @AppStorage("dateThreshold") private var dateThreshold: Double = 5.0
     @AppStorage("locationThreshold") private var locationThreshold: Double = 100.0
-    @AppStorage("autoSelectOldest") private var autoSelectOldest: Bool = true
-    @AppStorage("showAdvancedSettings") private var showAdvancedSettings: Bool = false
     @AppStorage("blurThreshold") private var blurThreshold: Double = 100.0
     @AppStorage("darknessThreshold") private var darknessThreshold: Double = 0.2
     @AppStorage("brightnessThreshold") private var brightnessThreshold: Double = 0.9
@@ -217,50 +215,6 @@ struct SettingsView: View {
                     )
                 }
 
-                // Kullanıcı Tercihleri
-                Section {
-                    Toggle("En Eski Fotoğrafları Otomatik Seç", isOn: $autoSelectOldest)
-
-                    Text("Grup detayında otomatik olarak en eski fotoğrafları silme için işaretler")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } header: {
-                    Text("Seçim Tercihleri")
-                }
-
-                // Gelişmiş Ayarlar
-                Section {
-                    Toggle("Gelişmiş Ayarları Göster", isOn: $showAdvancedSettings)
-
-                    if showAdvancedSettings {
-                        VStack(alignment: .leading, spacing: 12) {
-                            InfoRow(
-                                title: "Perceptual Hash",
-                                description: "8x8 pHash algoritması kullanılır"
-                            )
-
-                            InfoRow(
-                                title: "Histogram Analizi",
-                                description: "64-bin renk histogramı karşılaştırması"
-                            )
-
-                            InfoRow(
-                                title: "Metadata Analizi",
-                                description: "EXIF, tarih, GPS ve boyut bilgileri"
-                            )
-                        }
-                        .padding(.vertical, 4)
-                    }
-                } header: {
-                    Text("Gelişmiş")
-                } footer: {
-                    if showAdvancedSettings {
-                        Text(
-                            "Uygulama CoreImage ve PhotoKit framework'lerini kullanarak yüksek performanslı benzerlik analizi yapar"
-                        )
-                    }
-                }
-
                 // Hakkında
                 Section {
                     HStack {
@@ -323,18 +277,31 @@ struct SettingsView: View {
                 }
             }
         }
+        .onAppear {
+            updateSelectedPreset()
+        }
     }
 
     private func resetToDefaults() {
         similarityThreshold = 0.85
         dateThreshold = 5.0
         locationThreshold = 100.0
-        autoSelectOldest = true
-        showAdvancedSettings = false
         blurThreshold = 100.0
         darknessThreshold = 0.2
         brightnessThreshold = 0.9
         selectedPreset = .balanced
+        updateSelectedPreset()
+    }
+
+    private func updateSelectedPreset() {
+        // Mevcut ayarlara göre hangi preset'in aktif olduğunu belirle
+        if similarityThreshold >= 0.90 && dateThreshold <= 3.0 && locationThreshold <= 60.0 {
+            selectedPreset = .precise
+        } else if similarityThreshold <= 0.82 && dateThreshold >= 8.0 && locationThreshold >= 150.0 {
+            selectedPreset = .flexible
+        } else {
+            selectedPreset = .balanced
+        }
     }
 
     private func applyPreset(_ preset: PresetType) {
@@ -366,23 +333,9 @@ struct SettingsView: View {
             darknessThreshold = 0.25
             brightnessThreshold = 0.85
         }
-    }
-}
 
-// MARK: - Info Row Component
-struct InfoRow: View {
-    let title: String
-    let description: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-            Text(description)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
+        // Preset seçimini güncelle
+        updateSelectedPreset()
     }
 }
 

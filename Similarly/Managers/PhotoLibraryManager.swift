@@ -140,9 +140,16 @@ class PhotoLibraryManager: ObservableObject {
                 }
             }
 
+            // Load thumbnails for this batch
+            var batchWithThumbnails: [PhotoItem] = []
+            for photo in batchPhotos {
+                let photoWithThumbnail = await loadThumbnail(for: photo)
+                batchWithThumbnails.append(photoWithThumbnail)
+            }
+
             // Update the main array and UI
             await MainActor.run {
-                allPhotos.append(contentsOf: batchPhotos)
+                allPhotos.append(contentsOf: batchWithThumbnails)
                 self.photos = allPhotos
                 self.processingProgress = Double(allPhotos.count) / Double(totalCount)
 

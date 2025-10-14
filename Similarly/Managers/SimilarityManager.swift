@@ -56,9 +56,16 @@ class SimilarityManager: ObservableObject {
         }
     }
 
-    private var histogramThreshold: Double {
-        // Benzerlik threshold'una göre histogram eşiği
-        return 1.0 - similarityThreshold
+    private var blurThreshold: Double {
+        UserDefaults.standard.double(forKey: "blurThreshold")
+    }
+
+    private var darknessThreshold: Double {
+        UserDefaults.standard.double(forKey: "darknessThreshold")
+    }
+
+    private var brightnessThreshold: Double {
+        UserDefaults.standard.double(forKey: "brightnessThreshold")
     }
 
     // MARK: - Main Analysis Function
@@ -184,13 +191,14 @@ class SimilarityManager: ObservableObject {
         var bright: [PhotoItem] = []
 
         for photo in photos {
-            if photo.isBlurry {
+            // Kullanıcı eşikleri ile karşılaştır
+            if let blurScore = photo.blurScore, blurScore <= blurThreshold {
                 blurry.append(photo)
             }
-            if photo.isTooDark {
+            if let brightnessScore = photo.brightnessScore, brightnessScore <= darknessThreshold {
                 dark.append(photo)
             }
-            if photo.isTooBright {
+            if let brightnessScore = photo.brightnessScore, brightnessScore >= brightnessThreshold {
                 bright.append(photo)
             }
         }
