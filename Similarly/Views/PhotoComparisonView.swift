@@ -12,14 +12,14 @@ import SwiftUI
 struct PhotoComparisonView: View {
     let photos: [PhotoItem]
     let initialIndex: Int
-    let onSelect: (PhotoItem) -> Void
+    let onSelect: ([PhotoItem]) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
     @State private var fullImages: [String: UIImage] = [:]
 
-    init(photos: [PhotoItem], initialIndex: Int = 0, onSelect: @escaping (PhotoItem) -> Void) {
+    init(photos: [PhotoItem], initialIndex: Int = 0, onSelect: @escaping ([PhotoItem]) -> Void) {
         self.photos = photos
         self.initialIndex = initialIndex
         self.onSelect = onSelect
@@ -217,10 +217,8 @@ struct PhotoComparisonView: View {
         // Seçilen fotoğrafları işle
         let selectedPhotoItems = photos.filter { selectedPhotos.contains($0.id) }
 
-        // Her bir seçili fotoğraf için onSelect callback'ini çağır
-        for photo in selectedPhotoItems {
-            onSelect(photo)
-        }
+        // Seçimleri tek seferde parent'a aktar
+        onSelect(selectedPhotoItems)
 
         // Haptic feedback
         if !selectedPhotos.isEmpty {
@@ -347,7 +345,7 @@ struct ComparisonPhotoCard: View {
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 9))
-                        Text("\(photo.asset.pixelWidth)×\(photo.asset.pixelHeight)")
+                        Text("\(photo.pixelWidth)×\(photo.pixelHeight)")
                             .font(.caption2)
                     }
                 }

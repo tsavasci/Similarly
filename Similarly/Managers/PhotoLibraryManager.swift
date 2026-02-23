@@ -44,10 +44,8 @@ class PhotoLibraryManager: ObservableObject {
     @Published var processingProgress: Double = 0.0
     @Published var errorMessage: String?
 
+    nonisolated(unsafe) private static var analysisCIContext = CIContext(options: nil)
     private let imageManager = PHCachingImageManager()
-    private let context = CIContext()
-    private let processingQueue = DispatchQueue(
-        label: "com.similarly.photoprocessing", attributes: .concurrent)
 
     var modelContext: ModelContext?
 
@@ -69,7 +67,7 @@ class PhotoLibraryManager: ObservableObject {
         if status == .authorized || status == .limited {
             await fetchAssets()
         } else {
-            errorMessage = "Fotoğraf kütüphanesine erişim reddedildi"
+            setError("Fotoğraf kütüphanesine erişim reddedildi")
         }
     }
 
@@ -108,17 +106,20 @@ class PhotoLibraryManager: ObservableObject {
             // Process each asset in the current batch
             for j in i..<endIndex {
                 let asset = fetchResult.object(at: j)
-
-                // Get file size on background thread
-                var cachedSize: Int64?
-                if let resource = PHAssetResource.assetResources(for: asset).first,
-                   let fileSize = resource.value(forKey: "fileSize") as? Int64 {
-                    cachedSize = fileSize
-                }
+                let creationDate = asset.creationDate
+                let modificationDate = asset.modificationDate
+                let location = asset.location
+                let mediaType = asset.mediaType
+                let duration = asset.duration
+                let pixelWidth = asset.pixelWidth
+                let pixelHeight = asset.pixelHeight
+                let isFavorite = asset.isFavorite
+                let mediaSubtypes = asset.mediaSubtypes
 
                 // Create photo item with basic info
                 if let processedData = processedPhotosData[asset.localIdentifier],
-                   asset.modificationDate == processedData.modificationDate {
+                    modificationDate == processedData.modificationDate
+                {
                     let photo = PhotoItem(
                         id: asset.localIdentifier,
                         asset: asset,
@@ -127,14 +128,32 @@ class PhotoLibraryManager: ObservableObject {
                         histogram: processedData.histogram.map { CGFloat($0) },
                         blurScore: processedData.blurScore,
                         brightnessScore: processedData.brightnessScore,
-                        cachedFileSize: processedData.cachedFileSize ?? cachedSize
+                        cachedFileSize: processedData.cachedFileSize,
+                        creationDate: creationDate,
+                        modificationDate: modificationDate,
+                        location: location,
+                        mediaType: mediaType,
+                        duration: duration,
+                        pixelWidth: pixelWidth,
+                        pixelHeight: pixelHeight,
+                        isFavorite: isFavorite,
+                        mediaSubtypes: mediaSubtypes
                     )
                     batchPhotos.append(photo)
                 } else {
                     let photo = PhotoItem(
                         id: asset.localIdentifier,
                         asset: asset,
-                        cachedFileSize: cachedSize
+                        cachedFileSize: nil,
+                        creationDate: creationDate,
+                        modificationDate: modificationDate,
+                        location: location,
+                        mediaType: mediaType,
+                        duration: duration,
+                        pixelWidth: pixelWidth,
+                        pixelHeight: pixelHeight,
+                        isFavorite: isFavorite,
+                        mediaSubtypes: mediaSubtypes
                     )
                     batchPhotos.append(photo)
                 }
@@ -197,7 +216,11 @@ class PhotoLibraryManager: ObservableObject {
         guard let context = modelContext else { return [:] }
 
         let descriptor = FetchDescriptor<ProcessedPhoto>()
-        guard let results = try? context.fetch(descriptor) else {
+        let results: [ProcessedPhoto]
+        do {
+            results = try context.fetch(descriptor)
+        } catch {
+            setError("Önceki analiz verileri yüklenemedi: \(error.localizedDescription)")
             return [:]
         }
 
@@ -219,22 +242,26 @@ class PhotoLibraryManager: ObservableObject {
             }
         )
         
-        if let existing = try? context.fetch(descriptor).first {
-            // Güncelle
-            existing.pHash = photo.pHash
-            existing.histogram = photo.histogram?.map { Double($0) }
-            existing.blurScore = photo.blurScore
-            existing.brightnessScore = photo.brightnessScore
-            existing.cachedFileSize = photo.cachedFileSize
-            existing.lastProcessedDate = Date()
-            existing.modificationDate = photo.modificationDate
-        } else {
-            // Yeni ekle
-            let processed = ProcessedPhoto(from: photo)
-            context.insert(processed)
-        }
+        do {
+            if let existing = try context.fetch(descriptor).first {
+                // Güncelle
+                existing.pHash = photo.pHash
+                existing.histogram = photo.histogram?.map { Double($0) }
+                existing.blurScore = photo.blurScore
+                existing.brightnessScore = photo.brightnessScore
+                existing.cachedFileSize = photo.cachedFileSize
+                existing.lastProcessedDate = Date()
+                existing.modificationDate = photo.modificationDate
+            } else {
+                // Yeni ekle
+                let processed = ProcessedPhoto(from: photo)
+                context.insert(processed)
+            }
 
-        try? context.save()
+            try context.save()
+        } catch {
+            setError("Analiz verileri kaydedilemedi: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Processing Photos
@@ -267,35 +294,43 @@ class PhotoLibraryManager: ObservableObject {
     }
 
     private func processBatch(_ batch: [PhotoItem], startIndex: Int) async {
-        await withTaskGroup(of: (Int, PhotoItem).self) { group in
+        var photosToPersist: [PhotoItem] = []
+
+        await withTaskGroup(of: (Int, PhotoItem, Bool).self) { group in
             for (index, photo) in batch.enumerated() {
                 group.addTask {
                     var processedPhoto = photo
                     processedPhoto = await self.loadThumbnail(for: processedPhoto)
+                    var shouldPersist = false
 
                     // Sadece fotoğraflar için analiz yap (video için değil)
-                    let mediaType = processedPhoto.asset.mediaType
+                    let mediaType = processedPhoto.mediaType
                     if mediaType == .image {
                         // Sadece işlenmemiş fotoğrafları işle
                         if processedPhoto.pHash == nil {
-                            processedPhoto = await self.computePHash(for: processedPhoto)
-                            processedPhoto = await self.computeHistogram(for: processedPhoto)
-                            processedPhoto = await self.analyzeQuality(for: processedPhoto)
-
-                            // Veritabanına kaydet
-                            await self.saveProcessedPhoto(processedPhoto)
+                            processedPhoto = self.computePHash(for: processedPhoto)
+                            processedPhoto = self.computeHistogram(for: processedPhoto)
+                            processedPhoto = self.analyzeQuality(for: processedPhoto)
+                            shouldPersist = true
                         }
                     }
 
-                    return (startIndex + index, processedPhoto)
+                    return (startIndex + index, processedPhoto, shouldPersist)
                 }
             }
 
-            for await (index, processedPhoto) in group {
+            for await (index, processedPhoto, shouldPersist) in group {
                 if index < photos.count {
                     photos[index] = processedPhoto
                 }
+                if shouldPersist {
+                    photosToPersist.append(processedPhoto)
+                }
             }
+        }
+
+        for photo in photosToPersist {
+            await saveProcessedPhoto(photo)
         }
     }
 
@@ -332,7 +367,7 @@ class PhotoLibraryManager: ObservableObject {
 
     // MARK: - pHash Computation (Perceptual Hash)
 
-    private func computePHash(for photo: PhotoItem) async -> PhotoItem {
+    nonisolated private func computePHash(for photo: PhotoItem) -> PhotoItem {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
@@ -352,7 +387,7 @@ class PhotoLibraryManager: ObservableObject {
 
         // 3. Pixel değerlerini al
         let extent = CGRect(x: 0, y: 0, width: 8, height: 8)
-        guard let cgImage = context.createCGImage(scaledOutput, from: extent) else {
+        guard let cgImage = Self.analysisCIContext.createCGImage(scaledOutput, from: extent) else {
             return updatedPhoto
         }
 
@@ -411,7 +446,7 @@ class PhotoLibraryManager: ObservableObject {
 
     // MARK: - Histogram Computation
 
-    private func computeHistogram(for photo: PhotoItem) async -> PhotoItem {
+    nonisolated private func computeHistogram(for photo: PhotoItem) -> PhotoItem {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
@@ -430,7 +465,7 @@ class PhotoLibraryManager: ObservableObject {
         let extent = outputImage.extent
         var bitmap = [UInt8](repeating: 0, count: Int(extent.width * extent.height * 4))
 
-        context.render(
+        Self.analysisCIContext.render(
             outputImage, toBitmap: &bitmap, rowBytes: Int(extent.width) * 4, bounds: extent,
             format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
 
@@ -449,7 +484,7 @@ class PhotoLibraryManager: ObservableObject {
 
     // MARK: - Quality Analysis
 
-    private func analyzeQuality(for photo: PhotoItem) async -> PhotoItem {
+    nonisolated private func analyzeQuality(for photo: PhotoItem) -> PhotoItem {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
@@ -464,10 +499,7 @@ class PhotoLibraryManager: ObservableObject {
         return updatedPhoto
     }
 
-    private func calculateBlurScore(_ image: CIImage) -> Double {
-        // Laplacian filtresi ile kenar tespiti
-        let context = CIContext()
-
+    nonisolated private func calculateBlurScore(_ image: CIImage) -> Double {
         // Grayscale'e çevir
         guard let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono"),
             let colorControlsFilter = CIFilter(name: "CIColorControls")
@@ -493,7 +525,7 @@ class PhotoLibraryManager: ObservableObject {
             x: 0, y: 0, width: min(contrastedImage.extent.width, 100),
             height: min(contrastedImage.extent.height, 100))
 
-        guard let cgImage = context.createCGImage(contrastedImage, from: extent) else {
+        guard let cgImage = Self.analysisCIContext.createCGImage(contrastedImage, from: extent) else {
             return 200.0
         }
 
@@ -567,12 +599,11 @@ class PhotoLibraryManager: ObservableObject {
         return variance
     }
 
-    private func calculateBrightness(_ image: CIImage) -> Double {
-        let context = CIContext()
+    nonisolated private func calculateBrightness(_ image: CIImage) -> Double {
         let extent = CGRect(
             x: 0, y: 0, width: min(image.extent.width, 100), height: min(image.extent.height, 100))
 
-        guard let cgImage = context.createCGImage(image, from: extent) else {
+        guard let cgImage = Self.analysisCIContext.createCGImage(image, from: extent) else {
             return 0.5  // Default: medium brightness
         }
 
@@ -630,5 +661,9 @@ class PhotoLibraryManager: ObservableObject {
         photos.removeAll { deletedIds.contains($0.id) }
 
         print("🗑️ \(items.count) fotoğraf silindi")
+    }
+
+    func setError(_ message: String) {
+        errorMessage = message
     }
 }

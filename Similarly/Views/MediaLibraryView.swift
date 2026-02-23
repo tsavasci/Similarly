@@ -87,18 +87,23 @@ struct MediaLibraryView: View {
             }
             Button("Sil", role: .destructive) {
                 Task {
-                    try? await photoManager.deletePhotos(photosToDelete)
-                    photosToDelete = []
+                    do {
+                        try await photoManager.deletePhotos(photosToDelete)
+                        photosToDelete = []
 
-                    // Fotoğraf kütüphanesini yeniden yükle
-                    await photoManager.fetchAssets()
+                        // Fotoğraf kütüphanesini yeniden yükle
+                        await photoManager.fetchAssets()
 
-                    // Analizi güncelle
-                    await similarityManager.findSimilarPhotos(from: photoManager.photos)
+                        // Analizi güncelle
+                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
 
-                    // Eğer medya kalmadıysa geri dön
-                    if getTotalMediaCount() == 0 {
-                        dismiss()
+                        // Eğer medya kalmadıysa geri dön
+                        if getTotalMediaCount() == 0 {
+                            dismiss()
+                        }
+                    } catch {
+                        photoManager.setError(
+                            "Medya dosyaları silinemedi: \(error.localizedDescription)")
                     }
                 }
             }
@@ -355,11 +360,11 @@ struct MediaPhotoItem: View {
 
                 // Video için süre
                 if mediaType == .video {
-                    if let duration = photo.asset.duration as Double?, duration > 0 {
+                    if photo.duration > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                                 .font(.system(size: 8))
-                            Text(formatDuration(duration))
+                            Text(formatDuration(photo.duration))
                                 .font(.caption2)
                         }
                         .foregroundColor(.secondary)

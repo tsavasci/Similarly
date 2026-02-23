@@ -6,6 +6,7 @@
 //
 
 import CoreImage
+import CoreLocation
 import Foundation
 import Photos
 
@@ -13,6 +14,15 @@ import Photos
 struct PhotoItem: Identifiable, Hashable {
     let id: String
     let asset: PHAsset
+    let creationDate: Date?
+    let modificationDate: Date?
+    let location: CLLocation?
+    let mediaType: PHAssetMediaType
+    let duration: TimeInterval
+    let pixelWidth: Int
+    let pixelHeight: Int
+    let isFavorite: Bool
+    let mediaSubtypes: PHAssetMediaSubtype
     var thumbnail: CIImage?
     var pHash: String?
     var histogram: [CGFloat]?
@@ -20,63 +30,31 @@ struct PhotoItem: Identifiable, Hashable {
     var brightnessScore: Double?
     var cachedFileSize: Int64?
 
-    // Metadata bilgileri
-    var creationDate: Date? {
-        asset.creationDate
-    }
-
-    var modificationDate: Date? {
-        asset.modificationDate
-    }
-
-    var location: CLLocation? {
-        asset.location
-    }
-
-    var mediaType: PHAssetMediaType {
-        asset.mediaType
-    }
-
-    var duration: TimeInterval {
-        asset.duration
-    }
-
-    var pixelWidth: Int {
-        asset.pixelWidth
-    }
-
-    var pixelHeight: Int {
-        asset.pixelHeight
-    }
-
-    var isFavorite: Bool {
-        asset.isFavorite
-    }
-
     var isScreenshot: Bool {
         if #available(iOS 9.0, *) {
-            return (asset.mediaSubtypes.contains(.photoScreenshot))
+            return mediaSubtypes.contains(.photoScreenshot)
         }
         return false
     }
 
     var isLivePhoto: Bool {
         if #available(iOS 9.1, *) {
-            return (asset.mediaSubtypes.contains(.photoLive))
+            return mediaSubtypes.contains(.photoLive)
         }
         return false
     }
 
     var fileSize: Int64? {
-        // Sadece cache'lenmiş değeri dön
-        // Bu değer PhotoLibraryManager.fetchAssets() içinde prefetch edilir
+        // Sadece cache'lenmiş değeri dön (veritabanından gelen değer)
         return cachedFileSize
     }
 
     var isBlurry: Bool {
         if let blurScore = blurScore {
-            let threshold = UserDefaults.standard.double(forKey: "blurThreshold")
-            let finalThreshold = threshold > 0 ? threshold : 100.0
+            let finalThreshold = UserDefaults.standard.doubleValue(
+                forKey: "blurThreshold",
+                default: AppDefaults.blurThreshold
+            )
             return blurScore < finalThreshold
         }
         return false
@@ -84,8 +62,10 @@ struct PhotoItem: Identifiable, Hashable {
 
     var isTooDark: Bool {
         if let brightnessScore = brightnessScore {
-            let threshold = UserDefaults.standard.double(forKey: "darknessThreshold")
-            let finalThreshold = threshold > 0 ? threshold : 0.2
+            let finalThreshold = UserDefaults.standard.doubleValue(
+                forKey: "darknessThreshold",
+                default: AppDefaults.darknessThreshold
+            )
             return brightnessScore < finalThreshold
         }
         return false
@@ -93,8 +73,10 @@ struct PhotoItem: Identifiable, Hashable {
 
     var isTooBright: Bool {
         if let brightnessScore = brightnessScore {
-            let threshold = UserDefaults.standard.double(forKey: "brightnessThreshold")
-            let finalThreshold = threshold > 0 ? threshold : 0.9
+            let finalThreshold = UserDefaults.standard.doubleValue(
+                forKey: "brightnessThreshold",
+                default: AppDefaults.brightnessThreshold
+            )
             return brightnessScore > finalThreshold
         }
         return false
@@ -107,10 +89,22 @@ struct PhotoItem: Identifiable, Hashable {
     init(
         id: String, asset: PHAsset, thumbnail: CIImage? = nil, pHash: String? = nil,
         histogram: [CGFloat]? = nil, blurScore: Double? = nil, brightnessScore: Double? = nil,
-        cachedFileSize: Int64? = nil
+        cachedFileSize: Int64? = nil, creationDate: Date? = nil, modificationDate: Date? = nil,
+        location: CLLocation? = nil, mediaType: PHAssetMediaType? = nil, duration: TimeInterval? = nil,
+        pixelWidth: Int? = nil, pixelHeight: Int? = nil, isFavorite: Bool? = nil,
+        mediaSubtypes: PHAssetMediaSubtype? = nil
     ) {
         self.id = id
         self.asset = asset
+        self.creationDate = creationDate ?? asset.creationDate
+        self.modificationDate = modificationDate ?? asset.modificationDate
+        self.location = location ?? asset.location
+        self.mediaType = mediaType ?? asset.mediaType
+        self.duration = duration ?? asset.duration
+        self.pixelWidth = pixelWidth ?? asset.pixelWidth
+        self.pixelHeight = pixelHeight ?? asset.pixelHeight
+        self.isFavorite = isFavorite ?? asset.isFavorite
+        self.mediaSubtypes = mediaSubtypes ?? asset.mediaSubtypes
         self.thumbnail = thumbnail
         self.pHash = pHash
         self.histogram = histogram

@@ -186,7 +186,9 @@ struct MainView: View {
                 SettingsView()
             }
             .alert("Hata", isPresented: $showingError) {
-                Button("Tamam", role: .cancel) {}
+                Button("Tamam", role: .cancel) {
+                    photoManager.errorMessage = nil
+                }
             } message: {
                 Text(photoManager.errorMessage ?? "Bir hata oluştu")
             }
@@ -200,6 +202,9 @@ struct MainView: View {
                 }
                 // ModelContext'i PhotoLibraryManager'a set et
                 photoManager.modelContext = modelContext
+            }
+            .onChange(of: photoManager.errorMessage) { _, newMessage in
+                showingError = (newMessage != nil)
             }
         }
     }

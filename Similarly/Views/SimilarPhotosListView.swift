@@ -12,7 +12,6 @@ import SwiftUI
 struct SimilarPhotosListView: View {
     @ObservedObject var similarityManager: SimilarityManager
     @ObservedObject var photoManager: PhotoLibraryManager
-    @State private var selectedGroup: SimilarPhotoGroup?
     @State private var showingDeleteConfirmation = false
     @State private var photosToDelete: [PhotoItem] = []
     @Environment(\.dismiss) private var dismiss
@@ -330,14 +329,18 @@ struct SimilarPhotosListView: View {
             }
             Button("Sil", role: .destructive) {
                 Task {
-                    try? await photoManager.deletePhotos(photosToDelete)
-                    photosToDelete = []
+                    do {
+                        try await photoManager.deletePhotos(photosToDelete)
+                        photosToDelete = []
 
-                    // Fotoğraf kütüphanesini yeniden yükle
-                    await photoManager.fetchAssets()
+                        // Fotoğraf kütüphanesini yeniden yükle
+                        await photoManager.fetchAssets()
 
-                    // Grupları güncelle
-                    await similarityManager.findSimilarPhotos(from: photoManager.photos)
+                        // Grupları güncelle
+                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
+                    } catch {
+                        photoManager.setError("Fotoğraflar silinemedi: \(error.localizedDescription)")
+                    }
                 }
             }
         } message: {
@@ -651,9 +654,8 @@ struct SimilarPhotoDetailView: View {
             PhotoComparisonView(
                 photos: group.photos,
                 initialIndex: comparisonStartIndex,
-                onSelect: { photo in
-                    // Seçilen fotoğraf dışındaki tüm fotoğrafları seçili yap (silinmek üzere)
-                    selectedPhotos = Set(group.photos.filter { $0.id != photo.id }.map { $0.id })
+                onSelect: { selectedItems in
+                    selectedPhotos = Set(selectedItems.map(\.id))
                 }
             )
         }

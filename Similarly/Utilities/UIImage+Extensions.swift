@@ -8,11 +8,12 @@
 import CoreImage
 import UIKit
 
+private let conversionCIContext = CIContext(options: nil)
+
 extension UIImage {
     /// CIImage'den UIImage oluşturur
     convenience init?(ciImage: CIImage) {
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+        guard let cgImage = conversionCIContext.createCGImage(ciImage, from: ciImage.extent) else {
             return nil
         }
         self.init(cgImage: cgImage)
@@ -30,8 +31,7 @@ extension UIImage {
 extension CIImage {
     /// CIImage'den UIImage oluşturur
     func toUIImage() -> UIImage? {
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(self, from: self.extent) else {
+        guard let cgImage = conversionCIContext.createCGImage(self, from: self.extent) else {
             return nil
         }
         return UIImage(cgImage: cgImage)

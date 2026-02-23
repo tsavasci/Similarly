@@ -103,18 +103,22 @@ struct QualityIssuesView: View {
             }
             Button("Sil", role: .destructive) {
                 Task {
-                    try? await photoManager.deletePhotos(photosToDelete)
-                    photosToDelete = []
+                    do {
+                        try await photoManager.deletePhotos(photosToDelete)
+                        photosToDelete = []
 
-                    // Fotoğraf kütüphanesini yeniden yükle
-                    await photoManager.fetchAssets()
+                        // Fotoğraf kütüphanesini yeniden yükle
+                        await photoManager.fetchAssets()
 
-                    // Analizi güncelle
-                    await similarityManager.findSimilarPhotos(from: photoManager.photos)
+                        // Analizi güncelle
+                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
 
-                    // Eğer kalite sorunu kalmadıysa geri dön
-                    if similarityManager.getTotalQualityIssuesCount() == 0 {
-                        dismiss()
+                        // Eğer kalite sorunu kalmadıysa geri dön
+                        if similarityManager.getTotalQualityIssuesCount() == 0 {
+                            dismiss()
+                        }
+                    } catch {
+                        photoManager.setError("Fotoğraflar silinemedi: \(error.localizedDescription)")
                     }
                 }
             }

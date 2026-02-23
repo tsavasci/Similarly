@@ -27,16 +27,24 @@ class SimilarityManager: ObservableObject {
 
     // Benzerlik eşikleri - UserDefaults'tan alınıyor
     private var dateThresholdSeconds: TimeInterval {
-        UserDefaults.standard.double(forKey: "dateThreshold")
+        UserDefaults.standard.doubleValue(
+            forKey: "dateThreshold",
+            default: AppDefaults.dateThresholdSeconds
+        )
     }
 
     private var locationThresholdMeters: Double {
-        UserDefaults.standard.double(forKey: "locationThreshold")
+        UserDefaults.standard.doubleValue(
+            forKey: "locationThreshold",
+            default: AppDefaults.locationThresholdMeters
+        )
     }
 
     private var similarityThreshold: Double {
-        let threshold = UserDefaults.standard.double(forKey: "similarityThreshold")
-        return threshold > 0 ? threshold : 0.85  // Default 0.85
+        UserDefaults.standard.doubleValue(
+            forKey: "similarityThreshold",
+            default: AppDefaults.similarityThreshold
+        )
     }
 
     private var pHashThreshold: Int {
@@ -57,15 +65,24 @@ class SimilarityManager: ObservableObject {
     }
 
     private var blurThreshold: Double {
-        UserDefaults.standard.double(forKey: "blurThreshold")
+        UserDefaults.standard.doubleValue(
+            forKey: "blurThreshold",
+            default: AppDefaults.blurThreshold
+        )
     }
 
     private var darknessThreshold: Double {
-        UserDefaults.standard.double(forKey: "darknessThreshold")
+        UserDefaults.standard.doubleValue(
+            forKey: "darknessThreshold",
+            default: AppDefaults.darknessThreshold
+        )
     }
 
     private var brightnessThreshold: Double {
-        UserDefaults.standard.double(forKey: "brightnessThreshold")
+        UserDefaults.standard.doubleValue(
+            forKey: "brightnessThreshold",
+            default: AppDefaults.brightnessThreshold
+        )
     }
 
     // MARK: - Main Analysis Function
@@ -102,8 +119,8 @@ class SimilarityManager: ObservableObject {
         for (index, group) in candidateGroups.enumerated() {
             if group.count > 1 {
                 let similarGroup = await analyzeImageSimilarity(group)
-                // Sadece %80 ve üzeri benzerlik skoruna sahip grupları ekle
-                if similarGroup.count > 1 && similarGroup.similarityScore >= 0.80 {
+                // Kullanıcı eşiğine göre yeterince benzer grupları ekle
+                if similarGroup.count > 1 && similarGroup.similarityScore >= similarityThreshold {
                     finalGroups.append(similarGroup)
                 }
             }
@@ -212,19 +229,49 @@ class SimilarityManager: ObservableObject {
     // MARK: - Metadata Filtering
 
     private func filterByMetadata(_ photos: [PhotoItem]) async -> [[PhotoItem]] {
+        guard !photos.isEmpty else { return [] }
+
+        let indexes = buildMetadataIndexes(for: photos)
         var groups: [[PhotoItem]] = []
         var processed = Set<String>()
 
-        for photo in photos {
+        for (index, photo) in photos.enumerated() {
             if processed.contains(photo.id) {
                 continue
             }
 
             var group = [photo]
             processed.insert(photo.id)
+            var candidateIndexes = Set<Int>()
 
-            // Bu fotoğrafa yakın metadata'ya sahip diğer fotoğrafları bul
-            for otherPhoto in photos {
+            if let date = photo.creationDate {
+                let bucket = Int(floor(date.timeIntervalSince1970 / indexes.dateBucketSize))
+                for neighborBucket in (bucket - 1)...(bucket + 1) {
+                    if let indices = indexes.dateBuckets[neighborBucket] {
+                        candidateIndexes.formUnion(indices)
+                    }
+                }
+            }
+
+            if let location = photo.location {
+                let cell = locationCell(for: location, cellSizeMeters: indexes.locationCellSize)
+                for xOffset in -1...1 {
+                    for yOffset in -1...1 {
+                        let neighborCell = LocationCell(x: cell.x + xOffset, y: cell.y + yOffset)
+                        if let indices = indexes.locationBuckets[neighborCell] {
+                            candidateIndexes.formUnion(indices)
+                        }
+                    }
+                }
+            }
+
+            // Sadece indekslenmiş adayları karşılaştır
+            for candidateIndex in candidateIndexes.sorted() {
+                if candidateIndex == index {
+                    continue
+                }
+
+                let otherPhoto = photos[candidateIndex]
                 if processed.contains(otherPhoto.id) {
                     continue
                 }
@@ -239,6 +286,48 @@ class SimilarityManager: ObservableObject {
         }
 
         return groups
+    }
+
+    private func buildMetadataIndexes(for photos: [PhotoItem]) -> MetadataIndexes {
+        // Metadata kuralında en geniş tarih penceresi 60 saniye.
+        let dateBucketSize = max(1.0, max(dateThresholdSeconds, 60.0))
+        let locationCellSize = max(1.0, locationThresholdMeters)
+        var dateBuckets: [Int: [Int]] = [:]
+        var locationBuckets: [LocationCell: [Int]] = [:]
+
+        for (index, photo) in photos.enumerated() {
+            if let date = photo.creationDate {
+                let bucket = Int(floor(date.timeIntervalSince1970 / dateBucketSize))
+                dateBuckets[bucket, default: []].append(index)
+            }
+
+            if let location = photo.location {
+                let cell = locationCell(for: location, cellSizeMeters: locationCellSize)
+                locationBuckets[cell, default: []].append(index)
+            }
+        }
+
+        return MetadataIndexes(
+            dateBuckets: dateBuckets,
+            locationBuckets: locationBuckets,
+            dateBucketSize: dateBucketSize,
+            locationCellSize: locationCellSize
+        )
+    }
+
+    private func locationCell(for location: CLLocation, cellSizeMeters: Double) -> LocationCell {
+        // Web Mercator projection ile enleme göre değişen ölçek sorununu azalt.
+        let earthRadius = 6_378_137.0
+        let latitudeRadians = location.coordinate.latitude * .pi / 180.0
+        let longitudeRadians = location.coordinate.longitude * .pi / 180.0
+        let clampedLatitude = min(max(latitudeRadians, -1.4844222297453324), 1.4844222297453324)
+        let xMeters = earthRadius * longitudeRadians
+        let yMeters = earthRadius * log(tan(.pi / 4.0 + clampedLatitude / 2.0))
+
+        return LocationCell(
+            x: Int(floor(xMeters / cellSizeMeters)),
+            y: Int(floor(yMeters / cellSizeMeters))
+        )
     }
 
     private func isMetadataSimilar(_ photo1: PhotoItem, _ photo2: PhotoItem) -> Bool {
@@ -279,27 +368,25 @@ class SimilarityManager: ObservableObject {
 
     private func analyzeImageSimilarity(_ photos: [PhotoItem]) async -> SimilarPhotoGroup {
         var similarPhotos: [PhotoItem] = []
+        var similarPhotoIds = Set<String>()
         var totalScore: Double = 0.0
         var comparisonCount = 0
+        let candidatePairs = buildCandidatePairs(for: photos)
 
-        // Tüm fotoğrafları birbiriyle karşılaştır
-        for i in 0..<photos.count {
-            for j in (i + 1)..<photos.count {
-                let score = comparePhotos(photos[i], photos[j])
+        for pair in candidatePairs {
+            let score = comparePhotos(photos[pair.first], photos[pair.second])
 
-                if score >= 0.80 {  // %80 ve üzeri benzerlik
-                    totalScore += score
-                    comparisonCount += 1
+            if score >= similarityThreshold {
+                totalScore += score
+                comparisonCount += 1
 
-                    // İlk fotoğrafı henüz eklememişsek ekle
-                    if !similarPhotos.contains(where: { $0.id == photos[i].id }) {
-                        similarPhotos.append(photos[i])
-                    }
+                // O(1) üyelik kontrolü ile gereksiz taramayı azalt.
+                if similarPhotoIds.insert(photos[pair.first].id).inserted {
+                    similarPhotos.append(photos[pair.first])
+                }
 
-                    // İkinci fotoğrafı da ekle
-                    if !similarPhotos.contains(where: { $0.id == photos[j].id }) {
-                        similarPhotos.append(photos[j])
-                    }
+                if similarPhotoIds.insert(photos[pair.second].id).inserted {
+                    similarPhotos.append(photos[pair.second])
                 }
             }
         }
@@ -321,6 +408,9 @@ class SimilarityManager: ObservableObject {
         // 1. pHash karşılaştırması (en önemli)
         if let hash1 = photo1.pHash, let hash2 = photo2.pHash {
             let hammingDistance = calculateHammingDistance(hash1, hash2)
+            if hammingDistance > pHashThreshold {
+                return 0.0
+            }
             let pHashScore = 1.0 - (Double(hammingDistance) / 64.0)  // 64 bit hash
             totalScore += pHashScore * 2.0  // pHash'e daha fazla ağırlık ver
             scoreCount += 2
@@ -397,6 +487,101 @@ class SimilarityManager: ObservableObject {
         return similarity
     }
 
+    private func buildCandidatePairs(for photos: [PhotoItem]) -> [PhotoPair] {
+        guard photos.count > 1 else { return [] }
+
+        let threshold = min(max(pHashThreshold, 0), 63)
+        let segmentCount = min(64, max(1, threshold + 1))
+        let segments = buildHashSegments(count: segmentCount)
+
+        var hashByIndex: [Int: UInt64] = [:]
+        var buckets: [PHashBucketKey: [Int]] = [:]
+        var nonHashedIndices: [Int] = []
+
+        for (index, photo) in photos.enumerated() {
+            guard let hashString = photo.pHash, let hashValue = UInt64(hashString, radix: 16) else {
+                nonHashedIndices.append(index)
+                continue
+            }
+
+            hashByIndex[index] = hashValue
+            for segment in segments {
+                let key = PHashBucketKey(
+                    segmentIndex: segment.index,
+                    value: extractSegmentValue(from: hashValue, segment: segment)
+                )
+                buckets[key, default: []].append(index)
+            }
+        }
+
+        var candidatePairs = Set<PhotoPair>()
+        let nonHashedSet = Set(nonHashedIndices)
+
+        for i in photos.indices {
+            if let hashValue = hashByIndex[i] {
+                var neighbors = Set<Int>()
+                for segment in segments {
+                    let key = PHashBucketKey(
+                        segmentIndex: segment.index,
+                        value: extractSegmentValue(from: hashValue, segment: segment)
+                    )
+                    if let indices = buckets[key] {
+                        for j in indices where j > i {
+                            neighbors.insert(j)
+                        }
+                    }
+                }
+
+                // Hash olmayan fotoğraflarla karşılaştırmayı koru.
+                for j in nonHashedSet where j > i {
+                    neighbors.insert(j)
+                }
+
+                for j in neighbors {
+                    candidatePairs.insert(PhotoPair(first: i, second: j))
+                }
+            } else {
+                // Hash olmayanlar için fallback: önceki davranışı korumak adına tam tarama.
+                for j in (i + 1)..<photos.count {
+                    candidatePairs.insert(PhotoPair(first: i, second: j))
+                }
+            }
+        }
+
+        return candidatePairs.sorted { lhs, rhs in
+            if lhs.first == rhs.first {
+                return lhs.second < rhs.second
+            }
+            return lhs.first < rhs.first
+        }
+    }
+
+    private func buildHashSegments(count: Int) -> [HashSegment] {
+        let base = 64 / count
+        let remainder = 64 % count
+        var segments: [HashSegment] = []
+        segments.reserveCapacity(count)
+
+        var currentStart = 0
+        for index in 0..<count {
+            let extraBit = index < remainder ? 1 : 0
+            let bitCount = base + extraBit
+            segments.append(HashSegment(index: index, startBit: currentStart, bitCount: bitCount))
+            currentStart += bitCount
+        }
+
+        return segments
+    }
+
+    private func extractSegmentValue(from hashValue: UInt64, segment: HashSegment) -> UInt64 {
+        if segment.bitCount == 64 {
+            return hashValue
+        }
+
+        let mask = (UInt64(1) << UInt64(segment.bitCount)) - 1
+        return (hashValue >> UInt64(segment.startBit)) & mask
+    }
+
     // MARK: - Helper Functions
 
     func getSimilarityDescription(_ score: Double) -> String {
@@ -465,10 +650,7 @@ class SimilarityManager: ObservableObject {
             // Her gruptan en iyi kaliteyi tutup diğerlerini sil
             let photosToDelete = group.photos.dropFirst()
             for photo in photosToDelete {
-                // Gerçek dosya boyutunu PHAssetResource ile al
-                if let resource = PHAssetResource.assetResources(for: photo.asset).first,
-                    let fileSize = resource.value(forKey: "fileSize") as? Int64
-                {
+                if let fileSize = photo.fileSize {
                     totalSize += fileSize
                 } else {
                     // Fallback: JPEG sıkıştırma oranı ~1/10 olarak tahmin et
@@ -479,5 +661,43 @@ class SimilarityManager: ObservableObject {
         }
 
         return totalSize
+    }
+
+    private struct LocationCell: Hashable {
+        let x: Int
+        let y: Int
+    }
+
+    private struct MetadataIndexes {
+        let dateBuckets: [Int: [Int]]
+        let locationBuckets: [LocationCell: [Int]]
+        let dateBucketSize: TimeInterval
+        let locationCellSize: Double
+    }
+
+    private struct HashSegment {
+        let index: Int
+        let startBit: Int
+        let bitCount: Int
+    }
+
+    private struct PHashBucketKey: Hashable {
+        let segmentIndex: Int
+        let value: UInt64
+    }
+
+    private struct PhotoPair: Hashable {
+        let first: Int
+        let second: Int
+
+        init(first: Int, second: Int) {
+            if first < second {
+                self.first = first
+                self.second = second
+            } else {
+                self.first = second
+                self.second = first
+            }
+        }
     }
 }
