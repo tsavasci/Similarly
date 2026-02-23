@@ -67,7 +67,7 @@ class PhotoLibraryManager: ObservableObject {
         if status == .authorized || status == .limited {
             await fetchAssets()
         } else {
-            setError("Fotoğraf kütüphanesine erişim reddedildi")
+            setError(L10n.t("errors.photo_access_denied"))
         }
     }
 
@@ -174,7 +174,7 @@ class PhotoLibraryManager: ObservableObject {
 
                 // Log progress every 5 batches to avoid spamming
                 if i % (batchSize * 5) == 0 {
-                    print("🔄 Processed \(allPhotos.count) of \(totalCount) photos")
+                    print(L10n.f("log.photo.processed_progress", allPhotos.count, totalCount))
                 }
             }
         }
@@ -190,22 +190,22 @@ class PhotoLibraryManager: ObservableObject {
             let alreadyProcessed = allPhotos.filter { $0.pHash != nil }.count
             let needsProcessing = imageCount - alreadyProcessed
 
-            print("✅ Photo library loaded successfully")
-            print("📊 Statistics:")
-            print("   - 📸 \(imageCount) photos")
+            print(L10n.t("log.photo.loaded_ok"))
+            print(L10n.t("log.photo.stats_header"))
+            print(L10n.f("log.photo.stats_images", imageCount))
             if videoCount > 0 {
-                print("   - 🎥 \(videoCount) videos")
+                print(L10n.f("log.photo.stats_videos", videoCount))
             }
             if alreadyProcessed > 0 {
-                print("   - 💾 \(alreadyProcessed) photos loaded from database")
+                print(L10n.f("log.photo.stats_loaded_db", alreadyProcessed))
             }
             if needsProcessing > 0 {
-                print("   - 🔄 \(needsProcessing) new photos to process")
+                print(L10n.f("log.photo.stats_to_process", needsProcessing))
                 Task {
                     await self.processPhotos()
                 }
             } else {
-                print("   - 🎉 All photos are up to date")
+                print(L10n.t("log.photo.stats_up_to_date"))
             }
         }
     }
@@ -220,7 +220,12 @@ class PhotoLibraryManager: ObservableObject {
         do {
             results = try context.fetch(descriptor)
         } catch {
-            setError("Önceki analiz verileri yüklenemedi: \(error.localizedDescription)")
+            setError(
+                L10n.f(
+                    "errors.load_previous_analysis_failed",
+                    error.localizedDescription
+                )
+            )
             return [:]
         }
 
@@ -260,7 +265,12 @@ class PhotoLibraryManager: ObservableObject {
 
             try context.save()
         } catch {
-            setError("Analiz verileri kaydedilemedi: \(error.localizedDescription)")
+            setError(
+                L10n.f(
+                    "errors.save_analysis_failed",
+                    error.localizedDescription
+                )
+            )
         }
     }
 
@@ -273,7 +283,7 @@ class PhotoLibraryManager: ObservableObject {
             return
         }
 
-        print("🔄 Fotoğraflar işleniyor...")
+        print(L10n.t("log.photo.processing_start"))
 
         // Batch processing için gruplar oluştur
         let batchSize = 50
@@ -290,7 +300,7 @@ class PhotoLibraryManager: ObservableObject {
         }
 
         isProcessing = false
-        print("✅ Fotoğraf işleme tamamlandı")
+        print(L10n.t("log.photo.processing_done"))
     }
 
     private func processBatch(_ batch: [PhotoItem], startIndex: Int) async {
@@ -660,7 +670,7 @@ class PhotoLibraryManager: ObservableObject {
         let deletedIds = Set(items.map { $0.id })
         photos.removeAll { deletedIds.contains($0.id) }
 
-        print("🗑️ \(items.count) fotoğraf silindi")
+        print(L10n.f("log.photo.deleted_count", items.count))
     }
 
     func setError(_ message: String) {

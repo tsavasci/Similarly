@@ -27,11 +27,11 @@ struct MediaLibraryView: View {
                         .foregroundColor(.blue)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Video ve Live Photos")
+                        Text(L10n.k("media.header.title"))
                             .font(.title2)
                             .fontWeight(.bold)
 
-                        Text("\(getTotalMediaCount()) medya dosyası")
+                        Text(L10n.f("common.media_files_count", getTotalMediaCount()))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -43,10 +43,10 @@ struct MediaLibraryView: View {
                 .cornerRadius(12)
 
                 // Kategori seçimi
-                Picker("Kategori", selection: $selectedTab) {
-                    Text("Videolar (\(similarityManager.videos.count))")
+                Picker(L10n.t("common.category"), selection: $selectedTab) {
+                    Text(L10n.f("media.videos_count", similarityManager.videos.count))
                         .tag(0)
-                    Text("Live Photos (\(similarityManager.livePhotos.count))")
+                    Text(L10n.f("media.live_photos_count", similarityManager.livePhotos.count))
                         .tag(1)
                 }
                 .pickerStyle(.segmented)
@@ -79,13 +79,13 @@ struct MediaLibraryView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
-        .navigationTitle("Medya Kütüphanesi")
+        .navigationTitle(L10n.k("media.nav_title"))
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Medya Dosyalarını Sil", isPresented: $showingDeleteConfirmation) {
-            Button("İptal", role: .cancel) {
+        .alert(L10n.t("media.alert.delete_title"), isPresented: $showingDeleteConfirmation) {
+            Button(L10n.t("common.cancel"), role: .cancel) {
                 photosToDelete = []
             }
-            Button("Sil", role: .destructive) {
+            Button(L10n.t("common.delete"), role: .destructive) {
                 Task {
                     do {
                         try await photoManager.deletePhotos(photosToDelete)
@@ -103,12 +103,16 @@ struct MediaLibraryView: View {
                         }
                     } catch {
                         photoManager.setError(
-                            "Medya dosyaları silinemedi: \(error.localizedDescription)")
+                            L10n.f(
+                                "errors.delete_media_failed",
+                                error.localizedDescription
+                            )
+                        )
                     }
                 }
             }
         } message: {
-            Text("\(photosToDelete.count) medya dosyası kalıcı olarak silinecek. Emin misiniz?")
+            Text(L10n.f("media.alert.delete_message", photosToDelete.count))
         }
     }
 
@@ -141,7 +145,7 @@ struct MediaPhotoGrid: View {
                         .font(.system(size: 60))
                         .foregroundColor(.gray)
 
-                    Text("Medya Bulunamadı")
+                    Text(L10n.k("media.empty.title"))
                         .font(.title2)
                         .fontWeight(.bold)
 
@@ -207,7 +211,7 @@ struct MediaPhotoGrid: View {
                         HStack {
                             Image(systemName: "info.circle.fill")
                                 .foregroundColor(.blue)
-                            Text("\(selectedPhotos.count) medya dosyası seçildi")
+                            Text(L10n.f("media.selected_count", selectedPhotos.count))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -233,7 +237,7 @@ struct MediaPhotoGrid: View {
                                 )
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
-                                        ? "Tümünü Kaldır" : "Tümünü Seç"
+                                        ? L10n.k("common.clear_all") : L10n.k("common.select_all")
                                 )
                             }
                             .frame(maxWidth: .infinity)
@@ -249,7 +253,7 @@ struct MediaPhotoGrid: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
-                                Text("Sil (\(selectedPhotos.count))")
+                                Text(L10n.f("common.delete_with_count", selectedPhotos.count))
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -444,27 +448,26 @@ enum MediaType {
 
     var title: String {
         switch self {
-        case .video: return "Videolar"
-        case .livePhoto: return "Live Photos"
+        case .video: return L10n.t("media.type.videos")
+        case .livePhoto: return L10n.t("media.type.live_photos")
         }
     }
 
     var description: String {
         switch self {
         case .video:
-            return
-                "Kütüphanenizdeki tüm video dosyaları. İstemediğiniz videoları toplu olarak silebilirsiniz."
+            return L10n.t("media.type.videos.desc")
         case .livePhoto:
-            return "Live Photo olarak çekilmiş fotoğraflar. Video ve fotoğraf içerir."
+            return L10n.t("media.type.live_photos.desc")
         }
     }
 
     var emptyMessage: String {
         switch self {
         case .video:
-            return "Kütüphanenizde video bulunamadı"
+            return L10n.t("media.type.videos.empty")
         case .livePhoto:
-            return "Live Photo bulunamadı"
+            return L10n.t("media.type.live_photos.empty")
         }
     }
 }

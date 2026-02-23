@@ -27,11 +27,11 @@ struct QualityIssuesView: View {
                         .foregroundColor(.orange)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Kalite Sorunlu Fotoğraflar")
+                        Text(L10n.k("quality.header.title"))
                             .font(.title2)
                             .fontWeight(.bold)
 
-                        Text("\(similarityManager.getTotalQualityIssuesCount()) fotoğraf bulundu")
+                        Text(L10n.f("quality.total_found", similarityManager.getTotalQualityIssuesCount()))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -43,12 +43,12 @@ struct QualityIssuesView: View {
                 .cornerRadius(12)
 
                 // Kategori seçimi
-                Picker("Kategori", selection: $selectedTab) {
-                    Text("Bulanık (\(similarityManager.blurryPhotos.count))")
+                Picker(L10n.t("common.category"), selection: $selectedTab) {
+                    Text(L10n.f("quality.tab.blurry", similarityManager.blurryPhotos.count))
                         .tag(0)
-                    Text("Karanlık (\(similarityManager.darkPhotos.count))")
+                    Text(L10n.f("quality.tab.dark", similarityManager.darkPhotos.count))
                         .tag(1)
-                    Text("Parlak (\(similarityManager.brightPhotos.count))")
+                    Text(L10n.f("quality.tab.bright", similarityManager.brightPhotos.count))
                         .tag(2)
                 }
                 .pickerStyle(.segmented)
@@ -95,13 +95,13 @@ struct QualityIssuesView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
-        .navigationTitle("Kalite Sorunları")
+        .navigationTitle(L10n.k("quality.nav_title"))
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Fotoğrafları Sil", isPresented: $showingDeleteConfirmation) {
-            Button("İptal", role: .cancel) {
+        .alert(L10n.t("photos.alert.delete_title"), isPresented: $showingDeleteConfirmation) {
+            Button(L10n.t("common.cancel"), role: .cancel) {
                 photosToDelete = []
             }
-            Button("Sil", role: .destructive) {
+            Button(L10n.t("common.delete"), role: .destructive) {
                 Task {
                     do {
                         try await photoManager.deletePhotos(photosToDelete)
@@ -118,12 +118,17 @@ struct QualityIssuesView: View {
                             dismiss()
                         }
                     } catch {
-                        photoManager.setError("Fotoğraflar silinemedi: \(error.localizedDescription)")
+                        photoManager.setError(
+                            L10n.f(
+                                "errors.delete_photos_failed",
+                                error.localizedDescription
+                            )
+                        )
                     }
                 }
             }
         } message: {
-            Text("\(photosToDelete.count) fotoğraf kalıcı olarak silinecek. Emin misiniz?")
+            Text(L10n.f("photos.alert.delete_message", photosToDelete.count))
         }
     }
 }
@@ -172,7 +177,7 @@ struct QualityPhotoGrid: View {
                         .font(.system(size: 60))
                         .foregroundColor(.green)
 
-                    Text("Harika!")
+                    Text(L10n.k("quality.empty.title"))
                         .font(.title2)
                         .fontWeight(.bold)
 
@@ -251,7 +256,7 @@ struct QualityPhotoGrid: View {
                                 )
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
-                                        ? "Tümünü Kaldır" : "Tümünü Seç"
+                                        ? L10n.k("common.clear_all") : L10n.k("common.select_all")
                                 )
                             }
                             .frame(maxWidth: .infinity)
@@ -289,7 +294,7 @@ struct QualityPhotoGrid: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
-                                Text("Sil")
+                                Text(L10n.k("common.delete"))
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -418,42 +423,42 @@ enum QualityIssueType {
 
     var title: String {
         switch self {
-        case .blurry: return "Bulanık Fotoğraflar"
-        case .dark: return "Karanlık Fotoğraflar"
-        case .bright: return "Aşırı Parlak Fotoğraflar"
+        case .blurry: return L10n.t("quality.type.blurry.title")
+        case .dark: return L10n.t("quality.type.dark.title")
+        case .bright: return L10n.t("quality.type.bright.title")
         }
     }
 
     var description: String {
         switch self {
         case .blurry:
-            return "Bu fotoğraflar odak dışı veya hareket nedeniyle bulanık görünüyor."
+            return L10n.t("quality.type.blurry.desc")
         case .dark:
-            return "Bu fotoğraflar çok karanlık ve detaylar kaybolmuş."
+            return L10n.t("quality.type.dark.desc")
         case .bright:
-            return "Bu fotoğraflar aşırı pozlanmış ve beyaz bölgeler var."
+            return L10n.t("quality.type.bright.desc")
         }
     }
 
     var emptyMessage: String {
         switch self {
         case .blurry:
-            return "Bulanık fotoğraf bulunamadı"
+            return L10n.t("quality.type.blurry.empty")
         case .dark:
-            return "Karanlık fotoğraf bulunamadı"
+            return L10n.t("quality.type.dark.empty")
         case .bright:
-            return "Aşırı parlak fotoğraf bulunamadı"
+            return L10n.t("quality.type.bright.empty")
         }
     }
 
     var notIssueButtonText: String {
         switch self {
         case .blurry:
-            return "Net"
+            return L10n.t("quality.mark.sharp")
         case .dark:
-            return "İyi"
+            return L10n.t("quality.mark.good")
         case .bright:
-            return "İyi"
+            return L10n.t("quality.mark.good")
         }
     }
 

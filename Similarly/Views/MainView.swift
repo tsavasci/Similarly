@@ -37,11 +37,11 @@ struct MainView: View {
                                 )
                             )
 
-                        Text("Similarly")
+                        Text(L10n.k("app.name"))
                             .font(.largeTitle)
                             .fontWeight(.bold)
 
-                        Text("Benzer fotoğrafları bul ve temizle")
+                        Text(L10n.k("main.subtitle"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -54,7 +54,7 @@ struct MainView: View {
                         VStack(spacing: 15) {
                             StatCard(
                                 icon: "photo.on.rectangle.angled",
-                                title: "Toplam Fotoğraf",
+                                title: L10n.t("main.stats.total_photos"),
                                 value: "\(photoManager.photos.count)",
                                 color: .blue
                             )
@@ -62,16 +62,18 @@ struct MainView: View {
                             if !similarityManager.similarGroups.isEmpty {
                                 StatCard(
                                     icon: "square.on.square",
-                                    title: "Benzer Grup",
+                                    title: L10n.t("main.stats.similar_groups"),
                                     value: "\(similarityManager.similarGroups.count)",
                                     color: .purple
                                 )
 
                                 StatCard(
                                     icon: "trash.circle.fill",
-                                    title: "Temizlenebilir",
+                                    title: L10n.t("main.stats.cleanable"),
                                     value:
-                                        "\(similarityManager.getTotalSimilarPhotosCount()) fotoğraf",
+                                        L10n.f(
+                                            "common.photos_count",
+                                            similarityManager.getTotalSimilarPhotosCount()),
                                     color: .orange
                                 )
                             }
@@ -92,7 +94,7 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "photo.on.rectangle.angled")
-                                    Text("Fotoğrafları Yükle")
+                                    Text(L10n.k("main.actions.load_photos"))
                                         .fontWeight(.semibold)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -113,7 +115,7 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "sparkles")
-                                    Text("Benzer Fotoğrafları Bul")
+                                    Text(L10n.k("main.actions.find_similar"))
                                         .fontWeight(.semibold)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -138,7 +140,7 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.clockwise")
-                                    Text("Yeniden Yükle")
+                                    Text(L10n.k("common.reload"))
                                         .fontWeight(.semibold)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -157,14 +159,14 @@ struct MainView: View {
                 // İşleniyor göstergesi
                 if photoManager.isProcessing {
                     ProcessingOverlay(
-                        title: "Fotoğraflar İşleniyor",
+                        title: L10n.t("main.processing.photos"),
                         progress: photoManager.processingProgress
                     )
                 }
 
                 if similarityManager.isAnalyzing {
                     ProcessingOverlay(
-                        title: "Benzerlik Analizi Yapılıyor",
+                        title: L10n.t("main.processing.similarity"),
                         progress: similarityManager.analysisProgress
                     )
                 }
@@ -185,12 +187,12 @@ struct MainView: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
-            .alert("Hata", isPresented: $showingError) {
-                Button("Tamam", role: .cancel) {
+            .alert(L10n.t("common.error"), isPresented: $showingError) {
+                Button(L10n.t("common.ok"), role: .cancel) {
                     photoManager.errorMessage = nil
                 }
             } message: {
-                Text(photoManager.errorMessage ?? "Bir hata oluştu")
+                Text(photoManager.errorMessage ?? L10n.t("common.generic_error"))
             }
             .fullScreenCover(isPresented: $showingOnboarding) {
                 OnboardingView(isPresented: $showingOnboarding)

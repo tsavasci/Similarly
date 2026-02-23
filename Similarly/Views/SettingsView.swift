@@ -16,22 +16,60 @@ struct SettingsView: View {
     @AppStorage("blurThreshold") private var blurThreshold: Double = 100.0
     @AppStorage("darknessThreshold") private var darknessThreshold: Double = 0.2
     @AppStorage("brightnessThreshold") private var brightnessThreshold: Double = 0.9
+    @AppStorage("appLanguage") private var appLanguage: String = "system"
 
     @State private var selectedPreset: PresetType? = nil
 
-    enum PresetType: String, CaseIterable {
-        case precise = "Hassas"
-        case balanced = "Dengeli"
-        case flexible = "Esnek"
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
+    }
+
+    private var appBuild: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
+    }
+
+    struct LanguageOption: Identifiable, Hashable {
+        let code: String
+        let flag: String
+        var id: String { code }
+
+        static let all: [LanguageOption] = [
+            LanguageOption(code: "system", flag: "🌐"),
+            LanguageOption(code: "en", flag: "🇺🇸"),
+            LanguageOption(code: "tr", flag: "🇹🇷"),
+            LanguageOption(code: "ar", flag: "🇸🇦"),
+            LanguageOption(code: "zh-Hans", flag: "🇨🇳"),
+            LanguageOption(code: "es", flag: "🇪🇸"),
+            LanguageOption(code: "fr", flag: "🇫🇷"),
+            LanguageOption(code: "de", flag: "🇩🇪"),
+            LanguageOption(code: "ja", flag: "🇯🇵"),
+        ]
+    }
+
+    enum PresetType: CaseIterable {
+        case precise
+        case balanced
+        case flexible
+
+        var title: String {
+            switch self {
+            case .precise:
+                return L10n.t("settings.preset.precise.title")
+            case .balanced:
+                return L10n.t("settings.preset.balanced.title")
+            case .flexible:
+                return L10n.t("settings.preset.flexible.title")
+            }
+        }
 
         var description: String {
             switch self {
             case .precise:
-                return "Sadece çok benzer fotoğrafları bulur"
+                return L10n.t("settings.preset.precise.desc")
             case .balanced:
-                return "İyi bir denge (önerilen)"
+                return L10n.t("settings.preset.balanced.desc")
             case .flexible:
-                return "Daha fazla benzer fotoğraf bulur"
+                return L10n.t("settings.preset.flexible.desc")
             }
         }
 
@@ -50,6 +88,46 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Dil Seçimi
+                Section {
+                    ForEach(LanguageOption.all) { option in
+                        Button {
+                            appLanguage = option.code
+                        } label: {
+                            HStack(spacing: 12) {
+                                Text(option.flag)
+                                    .font(.title3)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(languageDisplayName(for: option))
+                                        .foregroundColor(.primary)
+
+                                    if option.code == "system" {
+                                        Text(L10n.k("settings.language.follow_system"))
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+
+                                Spacer()
+
+                                if selectedLanguageOption.code == option.code {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text(L10n.k("settings.language.title"))
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.k("settings.language.footer"))
+                        Text(L10n.f("settings.language.current", languageDisplayName(for: selectedLanguageOption)))
+                    }
+                }
+
                 // Hazır Ayarlar
                 Section {
                     ForEach(PresetType.allCases, id: \.self) { preset in
@@ -63,7 +141,7 @@ struct SettingsView: View {
                                     .frame(width: 30)
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(preset.rawValue)
+                                    Text(preset.title)
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                     Text(preset.description)
@@ -81,16 +159,16 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Text("Hızlı Ayarlar")
+                    Text(L10n.k("settings.quick.title"))
                 } footer: {
-                    Text("Manuel ayarlara göre daha hızlı başlangıç için hazır profiller")
+                    Text(L10n.k("settings.quick.footer"))
                 }
 
                 // Genel Ayarlar
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Benzerlik Eşiği")
+                            Text(L10n.k("settings.similarity.title"))
                             Spacer()
                             Text("\(Int(similarityThreshold * 100))%")
                                 .foregroundColor(.secondary)
@@ -99,35 +177,31 @@ struct SettingsView: View {
                         Slider(value: $similarityThreshold, in: 0.80...1.0, step: 0.05)
                             .tint(.blue)
 
-                        Text(
-                            "Fotoğrafların ne kadar benzer olması gerektiğini belirler (minimum %80)"
-                        )
+                        Text(L10n.k("settings.similarity.desc"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("Analiz Ayarları")
+                    Text(L10n.k("settings.analysis.title"))
                 } footer: {
-                    Text(
-                        "Daha düşük değer daha fazla benzer fotoğraf bulur, ancak yanlış eşleşme riski artar"
-                    )
+                    Text(L10n.k("settings.analysis.footer"))
                 }
 
                 // Metadata Filtreleri
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Tarih Yakınlığı")
+                            Text(L10n.k("settings.date_proximity.title"))
                             Spacer()
-                            Text("\(Int(dateThreshold)) saniye")
+                            Text(L10n.f("settings.seconds", Int(dateThreshold)))
                                 .foregroundColor(.secondary)
                         }
 
                         Slider(value: $dateThreshold, in: 1...60, step: 1)
                             .tint(.blue)
 
-                        Text("Seri çekimler için tarih farkı limiti")
+                        Text(L10n.k("settings.date_proximity.desc"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -135,31 +209,31 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Lokasyon Yakınlığı")
+                            Text(L10n.k("settings.location_proximity.title"))
                             Spacer()
-                            Text("\(Int(locationThreshold)) metre")
+                            Text(L10n.f("settings.meters", Int(locationThreshold)))
                                 .foregroundColor(.secondary)
                         }
 
                         Slider(value: $locationThreshold, in: 10...1000, step: 10)
                             .tint(.blue)
 
-                        Text("Aynı lokasyonda çekilen fotoğraflar için mesafe limiti")
+                        Text(L10n.k("settings.location_proximity.desc"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("Metadata Filtreleri")
+                    Text(L10n.k("settings.metadata.title"))
                 } footer: {
-                    Text("Bu değerler fotoğrafları gruplamadan önce ön filtreleme için kullanılır")
+                    Text(L10n.k("settings.metadata.footer"))
                 }
 
                 // Kalite Kontrol Ayarları
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Bulanıklık Eşiği")
+                            Text(L10n.k("settings.blur_threshold.title"))
                             Spacer()
                             Text("\(Int(blurThreshold))")
                                 .foregroundColor(.secondary)
@@ -168,7 +242,7 @@ struct SettingsView: View {
                         Slider(value: $blurThreshold, in: 50...200, step: 10)
                             .tint(.orange)
 
-                        Text("Daha yüksek değer daha az bulanık fotoğraf bulur")
+                        Text(L10n.k("settings.blur_threshold.desc"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -176,7 +250,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Karanlık Eşiği")
+                            Text(L10n.k("settings.dark_threshold.title"))
                             Spacer()
                             Text("\(Int(darknessThreshold * 100))%")
                                 .foregroundColor(.secondary)
@@ -185,7 +259,7 @@ struct SettingsView: View {
                         Slider(value: $darknessThreshold, in: 0.1...0.4, step: 0.05)
                             .tint(.purple)
 
-                        Text("Altındaki parlaklık değeri çok karanlık sayılır")
+                        Text(L10n.k("settings.dark_threshold.desc"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -193,7 +267,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Parlaklık Eşiği")
+                            Text(L10n.k("settings.brightness_threshold.title"))
                             Spacer()
                             Text("\(Int(brightnessThreshold * 100))%")
                                 .foregroundColor(.secondary)
@@ -202,50 +276,48 @@ struct SettingsView: View {
                         Slider(value: $brightnessThreshold, in: 0.7...1.0, step: 0.05)
                             .tint(.yellow)
 
-                        Text("Üstündeki parlaklık değeri aşırı parlak sayılır")
+                        Text(L10n.k("settings.brightness_threshold.desc"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("Kalite Kontrol")
+                    Text(L10n.k("settings.quality.title"))
                 } footer: {
-                    Text(
-                        "Bu eşikler bulanık, karanlık veya aşırı parlak fotoğrafların tespiti için kullanılır"
-                    )
+                    Text(L10n.k("settings.quality.footer"))
                 }
 
                 // Hakkında
                 Section {
                     HStack {
-                        Text("Versiyon")
+                        Text(L10n.k("settings.about.version"))
                         Spacer()
-                        Text("1.0.0")
+                        Text(appVersion)
                             .foregroundColor(.secondary)
                     }
 
                     HStack {
-                        Text("Build")
+                        Text(L10n.k("settings.about.build"))
                         Spacer()
-                        Text("2025.01")
+                        Text(appBuild)
                             .foregroundColor(.secondary)
                     }
 
                     Link(destination: URL(string: "https://github.com")!) {
                         HStack {
-                            Text("GitHub")
+                            Text(L10n.k("settings.about.github"))
                             Spacer()
                             Image(systemName: "arrow.up.forward.square")
                                 .foregroundColor(.blue)
                         }
                     }
                 } header: {
-                    Text("Hakkında")
+                    Text(L10n.k("settings.about.title"))
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Similarly - Benzer Fotoğraf Temizleyici")
+                        Text(L10n.k("settings.about.app_name"))
                             .font(.caption)
-                        Text("Fotoğraf kütüphanenizi temiz tutmanın en kolay yolu")
+                        Text(L10n.k("settings.about.tagline"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -259,27 +331,55 @@ struct SettingsView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Text("Varsayılan Ayarlara Dön")
+                            Text(L10n.k("settings.reset"))
                             Spacer()
                         }
                     }
                 } footer: {
-                    Text("Tüm ayarlar varsayılan değerlerine sıfırlanacak")
+                    Text(L10n.k("settings.reset.footer"))
                 }
             }
-            .navigationTitle("Ayarlar")
+            .navigationTitle(L10n.k("settings.nav_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Tamam") {
+                    Button(L10n.t("common.ok")) {
                         dismiss()
                     }
                 }
             }
         }
         .onAppear {
+            validateLanguagePreference()
             updateSelectedPreset()
         }
+    }
+
+    private var selectedLanguageOption: LanguageOption {
+        LanguageOption.all.first(where: { $0.code == appLanguage }) ?? LanguageOption.all[0]
+    }
+
+    private func validateLanguagePreference() {
+        let isValid = LanguageOption.all.contains(where: { $0.code == appLanguage })
+        if !isValid {
+            appLanguage = "system"
+        }
+    }
+
+    private func languageDisplayName(for option: LanguageOption) -> String {
+        if option.code == "system" {
+            return L10n.t("settings.language.system")
+        }
+
+        let localeIdentifier = option.code == "zh-Hans" ? "zh_Hans" : option.code
+        let locale = Locale(identifier: localeIdentifier)
+        let languageCode = locale.language.languageCode?.identifier ?? option.code
+
+        if let name = locale.localizedString(forLanguageCode: languageCode) {
+            return name.capitalized(with: locale)
+        }
+
+        return option.code
     }
 
     private func resetToDefaults() {

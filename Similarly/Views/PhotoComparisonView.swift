@@ -30,11 +30,11 @@ struct PhotoComparisonView: View {
             VStack(spacing: 0) {
                 // Üst bilgi
                 VStack(spacing: 12) {
-                    Text("Fotoğrafları Karşılaştır")
+                    Text(L10n.k("comparison.title"))
                         .font(.title2)
                         .fontWeight(.bold)
 
-                    Text("Silmek istediklerinizi seçin")
+                    Text(L10n.k("comparison.subtitle"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
@@ -42,7 +42,7 @@ struct PhotoComparisonView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "hand.tap.fill")
                             .font(.caption)
-                        Text("Uzun basarak büyüt")
+                        Text(L10n.k("comparison.hint.long_press"))
                             .font(.caption)
 
                         Spacer()
@@ -50,7 +50,7 @@ struct PhotoComparisonView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundColor(.blue)
-                        Text("Seçmek için dokun")
+                        Text(L10n.k("comparison.hint.tap_select"))
                             .font(.caption)
                     }
                     .foregroundColor(.secondary)
@@ -103,7 +103,7 @@ struct PhotoComparisonView: View {
                         HStack {
                             Image(systemName: "info.circle.fill")
                                 .foregroundColor(.blue)
-                            Text("\(selectedPhotos.count) fotoğraf seçildi")
+                            Text(L10n.f("comparison.selected_count", selectedPhotos.count))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Spacer()
@@ -129,7 +129,7 @@ struct PhotoComparisonView: View {
                                 )
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
-                                        ? "Tümünü Kaldır" : "Tümünü Seç"
+                                        ? L10n.k("common.clear_all") : L10n.k("common.select_all")
                                 )
                                 .fontWeight(.semibold)
                             }
@@ -146,7 +146,7 @@ struct PhotoComparisonView: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
-                                Text("Seçilenleri Sil")
+                                Text(L10n.k("common.delete_selected"))
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -166,14 +166,14 @@ struct PhotoComparisonView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Kapat") {
+                    Button(L10n.t("common.close")) {
                         dismiss()
                     }
                     .foregroundColor(.primary)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Bitti") {
+                    Button(L10n.t("common.done")) {
                         finalizeSelections()
                     }
                     .foregroundColor(.blue)

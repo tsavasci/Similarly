@@ -99,19 +99,19 @@ class SimilarityManager: ObservableObject {
         // Sadece image'ları analiz et
         let imagesToAnalyze = photos.filter { $0.mediaType == .image }
 
-        print("🔍 \(imagesToAnalyze.count) fotoğraf arasında benzerlik analizi başlatılıyor...")
+        print(L10n.f("log.similarity.start", imagesToAnalyze.count))
         if !videos.isEmpty {
-            print("🎥 \(videos.count) video bulundu")
+            print(L10n.f("log.similarity.videos_found", videos.count))
         }
         if !livePhotos.isEmpty {
-            print("📸 \(livePhotos.count) Live Photo bulundu")
+            print(L10n.f("log.similarity.live_found", livePhotos.count))
         }
 
         // 1. Metadata ile ön filtreleme yap
         let candidateGroups = await filterByMetadata(imagesToAnalyze)
         analysisProgress = 0.3
 
-        print("📊 \(candidateGroups.count) aday grup bulundu (metadata bazlı)")
+        print(L10n.f("log.similarity.candidates_found", candidateGroups.count))
 
         // 2. Görüntü bazlı benzerlik analizi
         var finalGroups: [SimilarPhotoGroup] = []
@@ -138,12 +138,12 @@ class SimilarityManager: ObservableObject {
         // Kalite sorunlu fotoğrafları filtrele
         detectQualityIssues(imagesToAnalyze)
 
-        print("✅ \(similarGroups.count) benzer fotoğraf grubu bulundu")
-        print("✅ \(duplicateGroups.count) duplikat grup bulundu")
-        print("✅ \(screenshotGroups.count) screenshot grup bulundu")
-        print("🔍 \(blurryPhotos.count) bulanık fotoğraf bulundu")
-        print("🔍 \(darkPhotos.count) karanlık fotoğraf bulundu")
-        print("🔍 \(brightPhotos.count) aşırı parlak fotoğraf bulundu")
+        print(L10n.f("log.similarity.groups_similar", similarGroups.count))
+        print(L10n.f("log.similarity.groups_duplicate", duplicateGroups.count))
+        print(L10n.f("log.similarity.groups_screenshot", screenshotGroups.count))
+        print(L10n.f("log.similarity.blurry_found", blurryPhotos.count))
+        print(L10n.f("log.similarity.dark_found", darkPhotos.count))
+        print(L10n.f("log.similarity.bright_found", brightPhotos.count))
     }
 
     // MARK: - Group Categorization
@@ -587,15 +587,15 @@ class SimilarityManager: ObservableObject {
     func getSimilarityDescription(_ score: Double) -> String {
         switch score {
         case 0.95...:
-            return "Neredeyse aynı"
+            return L10n.t("similarity.almost_identical")
         case 0.85..<0.95:
-            return "Çok benzer"
+            return L10n.t("similarity.very_similar")
         case 0.75..<0.85:
-            return "Benzer"
+            return L10n.t("similarity.similar")
         case 0.65..<0.75:
-            return "Biraz benzer"
+            return L10n.t("similarity.slightly_similar")
         default:
-            return "Az benzer"
+            return L10n.t("similarity.less_similar")
         }
     }
 

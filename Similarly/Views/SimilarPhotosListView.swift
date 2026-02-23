@@ -27,11 +27,11 @@ struct SimilarPhotosListView: View {
                         .font(.system(size: 80))
                         .foregroundColor(.green)
 
-                    Text("Tebrikler!")
+                    Text(L10n.k("similar.empty.title"))
                         .font(.title)
                         .fontWeight(.bold)
 
-                    Text("Benzer fotoğraf bulunamadı.\nFotoğraf kütüphaneniz temiz görünüyor.")
+                    Text(L10n.k("similar.empty.message"))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                 }
@@ -47,7 +47,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Image(systemName: "doc.on.doc.fill")
                                         .foregroundColor(.red)
-                                    Text("\(similarityManager.duplicateGroups.count) duplikat grup")
+                                    Text(L10n.f("similar.summary.duplicate_groups", similarityManager.duplicateGroups.count))
                                         .font(.headline)
                                 }
                             }
@@ -58,7 +58,7 @@ struct SimilarPhotosListView: View {
                                     Image(systemName: "camera.viewfinder")
                                         .foregroundColor(.orange)
                                     Text(
-                                        "\(similarityManager.screenshotGroups.count) screenshot grup"
+                                        L10n.f("similar.summary.screenshot_groups", similarityManager.screenshotGroups.count)
                                     )
                                     .font(.headline)
                                 }
@@ -69,7 +69,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Image(systemName: "square.stack.3d.up.fill")
                                         .foregroundColor(.blue)
-                                    Text("\(similarityManager.similarGroups.count) benzer grup")
+                                    Text(L10n.f("similar.summary.similar_groups", similarityManager.similarGroups.count))
                                         .font(.headline)
                                 }
                             }
@@ -85,7 +85,7 @@ struct SimilarPhotosListView: View {
                             HStack {
                                 Image(systemName: "photo.stack")
                                     .foregroundColor(.purple)
-                                Text("\(totalPhotos) toplam fotoğraf")
+                                Text(L10n.f("similar.summary.total_photos", totalPhotos))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -95,7 +95,7 @@ struct SimilarPhotosListView: View {
                                     Image(systemName: "internaldrive")
                                         .foregroundColor(.green)
                                     Text(
-                                        "~\(formatBytes(similarityManager.getPotentialSpaceSavings())) tasarruf edilebilir"
+                                        L10n.f("similar.summary.savings", formatBytes(similarityManager.getPotentialSpaceSavings()))
                                     )
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -113,7 +113,7 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "video.fill")
                                     .foregroundColor(.blue)
-                                Text("Video ve Live Photos")
+                                Text(L10n.k("media.header.title"))
                                     .foregroundColor(.blue)
                             }
                         ) {
@@ -130,10 +130,10 @@ struct SimilarPhotosListView: View {
                                                 .foregroundColor(.blue)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
-                                                    "\(similarityManager.getTotalVideosCount()) video"
+                                                    L10n.f("media.videos_count", similarityManager.getTotalVideosCount())
                                                 )
                                                 .font(.headline)
-                                                Text("Videoları görüntüle ve yönet")
+                                                Text(L10n.k("similar.media.videos_cta"))
                                                     .font(.caption2)
                                                     .foregroundColor(.secondary)
                                             }
@@ -148,10 +148,10 @@ struct SimilarPhotosListView: View {
                                                 .foregroundColor(.purple)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
-                                                    "\(similarityManager.getTotalLivePhotosCount()) Live Photo"
+                                                    L10n.f("media.live_photos_count", similarityManager.getTotalLivePhotosCount())
                                                 )
                                                 .font(.headline)
-                                                Text("Live Photos'ları görüntüle ve yönet")
+                                                Text(L10n.k("similar.media.live_cta"))
                                                     .font(.caption2)
                                                     .foregroundColor(.secondary)
                                             }
@@ -170,7 +170,7 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .foregroundColor(.orange)
-                                Text("Kalite Sorunları")
+                                Text(L10n.k("quality.nav_title"))
                                     .foregroundColor(.orange)
                             }
                         ) {
@@ -217,7 +217,7 @@ struct SimilarPhotosListView: View {
                                             }
                                         }
 
-                                        Text("Bulanık, karanlık veya aşırı parlak fotoğraflar")
+                                        Text(L10n.k("similar.quality.desc"))
                                             .font(.caption2)
                                             .foregroundColor(.secondary)
                                     }
@@ -235,7 +235,7 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "doc.on.doc.fill")
                                     .foregroundColor(.red)
-                                Text("Duplikat Fotoğraflar (%100 Aynı)")
+                                Text(L10n.k("similar.section.duplicates"))
                                     .foregroundColor(.red)
                             }
                         ) {
@@ -265,7 +265,7 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "camera.viewfinder")
                                     .foregroundColor(.orange)
-                                Text("Ekran Görüntüleri")
+                                Text(L10n.k("similar.section.screenshots"))
                                     .foregroundColor(.orange)
                             }
                         ) {
@@ -295,7 +295,7 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "square.stack.3d.up.fill")
                                     .foregroundColor(.blue)
-                                Text("Benzer Fotoğraf Grupları")
+                                Text(L10n.k("similar.section.similar_groups"))
                                     .foregroundColor(.blue)
                             }
                         ) {
@@ -321,13 +321,13 @@ struct SimilarPhotosListView: View {
                 }
             }
         }
-        .navigationTitle("Benzer Fotoğraflar")
+        .navigationTitle(L10n.k("similar.nav_title"))
         .navigationBarTitleDisplayMode(.large)
-        .alert("Fotoğrafları Sil", isPresented: $showingDeleteConfirmation) {
-            Button("İptal", role: .cancel) {
+        .alert(L10n.t("photos.alert.delete_title"), isPresented: $showingDeleteConfirmation) {
+            Button(L10n.t("common.cancel"), role: .cancel) {
                 photosToDelete = []
             }
-            Button("Sil", role: .destructive) {
+            Button(L10n.t("common.delete"), role: .destructive) {
                 Task {
                     do {
                         try await photoManager.deletePhotos(photosToDelete)
@@ -339,12 +339,17 @@ struct SimilarPhotosListView: View {
                         // Grupları güncelle
                         await similarityManager.findSimilarPhotos(from: photoManager.photos)
                     } catch {
-                        photoManager.setError("Fotoğraflar silinemedi: \(error.localizedDescription)")
+                        photoManager.setError(
+                            L10n.f(
+                                "errors.delete_photos_failed",
+                                error.localizedDescription
+                            )
+                        )
                     }
                 }
             }
         } message: {
-            Text("\(photosToDelete.count) fotoğraf kalıcı olarak silinecek. Emin misiniz?")
+            Text(L10n.f("photos.alert.delete_message", photosToDelete.count))
         }
     }
 
@@ -368,7 +373,9 @@ struct SimilarGroupRow: View {
                     // İlk satır: Fotoğraf sayısı ve benzerlik
                     HStack(spacing: 4) {
                         Text(
-                            "\(group.count) \(group.allScreenshots ? "screenshot" : "benzer fotoğraf")"
+                            group.allScreenshots
+                                ? L10n.f("similar.row.screenshot_count", group.count)
+                                : L10n.f("similar.row.similar_photo_count", group.count)
                         )
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -391,7 +398,7 @@ struct SimilarGroupRow: View {
                                 Image(systemName: "star.fill")
                                     .font(.system(size: 8))
                                     .foregroundColor(.yellow)
-                                Text("Favori")
+                                Text(L10n.k("common.favorite"))
                                     .font(.caption2)
                                     .foregroundColor(.yellow)
                             }
@@ -452,7 +459,7 @@ struct SimilarGroupRow: View {
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
 
-                Text("benzer")
+                Text(L10n.k("common.similar"))
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -464,17 +471,17 @@ struct SimilarGroupRow: View {
 
     private func getSimilarityDescription(_ score: Double) -> String {
         if score >= 0.99 {
-            return "%100 Aynı"
+            return L10n.t("similarity.exact_match")
         } else if score >= 0.95 {
-            return "Neredeyse aynı"
+            return L10n.t("similarity.almost_identical")
         } else if score >= 0.85 {
-            return "Çok benzer"
+            return L10n.t("similarity.very_similar")
         } else if score >= 0.75 {
-            return "Benzer"
+            return L10n.t("similarity.similar")
         } else if score >= 0.65 {
-            return "Biraz benzer"
+            return L10n.t("similarity.slightly_similar")
         } else {
-            return "Az benzer"
+            return L10n.t("similarity.less_similar")
         }
     }
 
@@ -509,11 +516,11 @@ struct SimilarPhotoDetailView: View {
         VStack {
             // Üst bilgi
             VStack(spacing: 8) {
-                Text("\(group.count) benzer fotoğraf")
+                Text(L10n.f("similar.detail.count", group.count))
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("Silmek istediğiniz fotoğrafları seçin")
+                Text(L10n.k("similar.detail.select_to_delete"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
@@ -522,7 +529,7 @@ struct SimilarPhotoDetailView: View {
                     HStack {
                         Image(systemName: "star.fill")
                             .foregroundColor(.yellow)
-                        Text("Favori işaretli fotoğraflar otomatik olarak korunur")
+                        Text(L10n.k("similar.detail.favorite_protected"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -570,7 +577,7 @@ struct SimilarPhotoDetailView: View {
             }) {
                 HStack {
                     Image(systemName: "arrow.left.and.right.square")
-                    Text("Fotoğrafları Karşılaştır")
+                    Text(L10n.k("comparison.title"))
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -599,7 +606,7 @@ struct SimilarPhotoDetailView: View {
                                 ? "checkmark.circle" : "circle")
                         Text(
                             selectedPhotos.count == nonFavorites.count
-                                ? "Tümünü Kaldır" : "Tümünü Seç")
+                                ? L10n.k("common.clear_all") : L10n.k("common.select_all"))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -613,7 +620,7 @@ struct SimilarPhotoDetailView: View {
                 }) {
                     HStack {
                         Image(systemName: "clock.arrow.circlepath")
-                        Text("En Eskileri")
+                        Text(L10n.k("common.oldest"))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -633,7 +640,7 @@ struct SimilarPhotoDetailView: View {
             }) {
                 HStack {
                     Image(systemName: "trash.fill")
-                    Text("Seçilenleri Sil (\(selectedPhotos.count))")
+                    Text(L10n.f("common.delete_selected_count", selectedPhotos.count))
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -645,7 +652,7 @@ struct SimilarPhotoDetailView: View {
             .disabled(selectedPhotos.isEmpty)
             .padding()
         }
-        .navigationTitle("Grup Detayı")
+        .navigationTitle(L10n.k("similar.detail.nav_title"))
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(item: $showingFullImage) { photo in
             FullImageView(photo: photo)

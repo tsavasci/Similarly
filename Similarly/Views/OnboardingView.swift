@@ -16,30 +16,26 @@ struct OnboardingView: View {
     let pages: [OnboardingPage] = [
         OnboardingPage(
             icon: "photo.stack.fill",
-            title: "Benzer Fotoğrafları Bul",
-            description:
-                "Akıllı algoritmalar ile fotoğraf kütüphanenizdeki benzer ve tekrarlayan fotoğrafları otomatik olarak tespit edin.",
+            title: L10n.t("onboarding.page1.title"),
+            description: L10n.t("onboarding.page1.desc"),
             gradient: [.blue, .purple]
         ),
         OnboardingPage(
             icon: "sparkles",
-            title: "Gelişmiş Analiz",
-            description:
-                "Perceptual Hash ve histogram analizi ile %95'e varan doğrulukta benzerlik tespiti yapın.",
+            title: L10n.t("onboarding.page2.title"),
+            description: L10n.t("onboarding.page2.desc"),
             gradient: [.purple, .pink]
         ),
         OnboardingPage(
             icon: "hand.thumbsup.fill",
-            title: "Kolay ve Güvenli",
-            description:
-                "Fotoğrafları önizleyip onayladıktan sonra silin. Tüm işlemler cihazınızda güvenle yapılır.",
+            title: L10n.t("onboarding.page3.title"),
+            description: L10n.t("onboarding.page3.desc"),
             gradient: [.pink, .orange]
         ),
         OnboardingPage(
             icon: "internaldrive",
-            title: "Depolama Alanı Kazanın",
-            description:
-                "Gereksiz fotoğrafları temizleyerek cihazınızda önemli miktarda depolama alanı açın.",
+            title: L10n.t("onboarding.page4.title"),
+            description: L10n.t("onboarding.page4.desc"),
             gradient: [.orange, .red]
         ),
     ]
@@ -62,7 +58,7 @@ struct OnboardingView: View {
                     Button(action: {
                         completeOnboarding()
                     }) {
-                        Text("Atla")
+                        Text(L10n.k("common.skip"))
                             .foregroundColor(.white.opacity(0.8))
                             .padding()
                     }
@@ -107,7 +103,7 @@ struct OnboardingView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "chevron.left")
-                                    Text("Geri")
+                                    Text(L10n.k("common.back"))
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
@@ -127,7 +123,10 @@ struct OnboardingView: View {
                             }
                         }) {
                             HStack {
-                                Text(currentPage < pages.count - 1 ? "İleri" : "Başla")
+                                Text(
+                                    currentPage < pages.count - 1
+                                        ? L10n.k("common.next") : L10n.k("common.start")
+                                )
                                     .fontWeight(.semibold)
                                 if currentPage < pages.count - 1 {
                                     Image(systemName: "chevron.right")
