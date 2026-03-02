@@ -45,6 +45,11 @@ class PhotoLibraryManager: ObservableObject {
     @Published var errorMessage: String?
 
     nonisolated(unsafe) private static var analysisCIContext = CIContext(options: nil)
+    private static let thumbnailCache: NSCache<NSString, CIImage> = {
+        let cache = NSCache<NSString, CIImage>()
+        cache.totalCostLimit = 500 * 1024 * 1024 // 500 MB limit
+        return cache
+    }()
     private let imageManager = PHCachingImageManager()
 
     var modelContext: ModelContext?
@@ -159,21 +164,13 @@ class PhotoLibraryManager: ObservableObject {
                 }
             }
 
-            // Load thumbnails for this batch
-            var batchWithThumbnails: [PhotoItem] = []
-            for photo in batchPhotos {
-                let photoWithThumbnail = await loadThumbnail(for: photo)
-                batchWithThumbnails.append(photoWithThumbnail)
-            }
-
-            // Update the main array and UI
+            // Append batch without loading thumbnails (on-demand loading in views)
             await MainActor.run {
-                allPhotos.append(contentsOf: batchWithThumbnails)
+                allPhotos.append(contentsOf: batchPhotos)
                 self.photos = allPhotos
                 self.processingProgress = Double(allPhotos.count) / Double(totalCount)
-
-                // Log progress every 5 batches to avoid spamming
-                if i % (batchSize * 5) == 0 {
+                // Log progress every 10 batches to avoid spamming
+                if i % (batchSize * 10) == 0 {
                     print(L10n.f("log.photo.processed_progress", allPhotos.count, totalCount))
                 }
             }
@@ -291,11 +288,23 @@ class PhotoLibraryManager: ObservableObject {
             Array(photos[$0..<min($0 + batchSize, totalCount)])
         }
 
-        for (batchIndex, batch) in batches.enumerated() {
-            await processBatch(batch, startIndex: batchIndex * batchSize)
-
-            let progress =
-                Double(min((batchIndex + 1) * batchSize, totalCount)) / Double(totalCount)
+        // Paralel batch processing - 3 batch'i aynı anda işle
+        let concurrentBatchLimit = 3
+        for startIdx in stride(from: 0, to: batches.count, by: concurrentBatchLimit) {
+            let endIdx = min(startIdx + concurrentBatchLimit, batches.count)
+            let concurrentBatches = Array(batches[startIdx..<endIdx])
+            
+            await withTaskGroup(of: Void.self) { group in
+                for (relativeBatchIndex, batch) in concurrentBatches.enumerated() {
+                    let absoluteBatchIndex = startIdx + relativeBatchIndex
+                    group.addTask {
+                        await self.processBatch(batch, startIndex: absoluteBatchIndex * batchSize)
+                    }
+                }
+            }
+            
+            // Update progress after processing concurrent batches
+            let progress = Double(min(endIdx * batchSize, totalCount)) / Double(totalCount)
             processingProgress = progress
         }
 
@@ -348,28 +357,65 @@ class PhotoLibraryManager: ObservableObject {
 
     private func loadThumbnail(for photo: PhotoItem) async -> PhotoItem {
         var updatedPhoto = photo
+        guard photo.asset.pixelWidth > 0, photo.asset.pixelHeight > 0 else {
+            return updatedPhoto
+        }
+
+        let cacheKey = photo.id as NSString
+        
+        // Check cache first
+        if let cachedThumbnail = Self.thumbnailCache.object(forKey: cacheKey) {
+            updatedPhoto.thumbnail = cachedThumbnail
+            return updatedPhoto
+        }
+        
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
-            options.deliveryMode = .highQualityFormat
+            options.deliveryMode = .fastFormat
+            options.resizeMode = .fast
             options.isNetworkAccessAllowed = true
             options.isSynchronous = false
 
-            let targetSize = CGSize(width: 300, height: 300)
+            let targetSize = photo.asset.safeAspectFitTargetSize(
+                in: CGSize(width: 300, height: 300),
+                minimumEdge: 8
+            )
+            var resumed = false
 
-            imageManager.requestImage(
+            let requestID = imageManager.requestImage(
                 for: photo.asset,
                 targetSize: targetSize,
                 contentMode: .aspectFit,
                 options: options
             ) { image, info in
-                if let image = image,
-                    let cgImage = image.cgImage
-                {
+                let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                if cancelled { return }
+
+                if let image = image, let cgImage = image.cgImage {
                     updatedPhoto.thumbnail = CIImage(cgImage: cgImage)
                 } else if let image = image {
                     updatedPhoto.thumbnail = CIImage(image: image)
                 }
-                continuation.resume()
+                
+                // Cache the thumbnail if successfully loaded
+                if let thumbnail = updatedPhoto.thumbnail {
+                    let estimatedCost = max(1, Int(300 * 300 / 100)) // Approximate cost
+                    Self.thumbnailCache.setObject(thumbnail, forKey: cacheKey, cost: estimatedCost)
+                }
+
+                if !resumed {
+                    resumed = true
+                    continuation.resume()
+                }
+            }
+
+            // Safety timeout: ensure we always resume even if PhotoKit never calls back with a final result
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                if !resumed {
+                    resumed = true
+                    self.imageManager.cancelImageRequest(requestID)
+                    continuation.resume()
+                }
             }
         }
         return updatedPhoto
@@ -381,76 +427,79 @@ class PhotoLibraryManager: ObservableObject {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
-        // 1. Grayscale'e çevir
-        let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono")
-        grayscaleFilter?.setValue(ciImage, forKey: kCIInputImageKey)
+        autoreleasepool {
+            // 1. Grayscale'e çevir
+            let grayscaleFilter = CIFilter(name: "CIPhotoEffectMono")
+            grayscaleFilter?.setValue(ciImage, forKey: kCIInputImageKey)
 
-        guard let grayscaleOutput = grayscaleFilter?.outputImage else { return updatedPhoto }
+            guard let grayscaleOutput = grayscaleFilter?.outputImage else { return }
 
-        // 2. 8x8 boyutuna küçült
-        let scaleFilter = CIFilter(name: "CILanczosScaleTransform")
-        scaleFilter?.setValue(grayscaleOutput, forKey: kCIInputImageKey)
-        scaleFilter?.setValue(8.0 / ciImage.extent.width, forKey: kCIInputScaleKey)
-        scaleFilter?.setValue(1.0, forKey: kCIInputAspectRatioKey)
+            // 2. 8x8 boyutuna küçült
+            let scaleFilter = CIFilter(name: "CILanczosScaleTransform")
+            scaleFilter?.setValue(grayscaleOutput, forKey: kCIInputImageKey)
+            scaleFilter?.setValue(8.0 / ciImage.extent.width, forKey: kCIInputScaleKey)
+            scaleFilter?.setValue(1.0, forKey: kCIInputAspectRatioKey)
 
-        guard let scaledOutput = scaleFilter?.outputImage else { return updatedPhoto }
+            guard let scaledOutput = scaleFilter?.outputImage else { return }
 
-        // 3. Pixel değerlerini al
-        let extent = CGRect(x: 0, y: 0, width: 8, height: 8)
-        guard let cgImage = Self.analysisCIContext.createCGImage(scaledOutput, from: extent) else {
-            return updatedPhoto
-        }
-
-        // 4. Bitmap oluştur
-        let width = cgImage.width
-        let height = cgImage.height
-        let bytesPerPixel = 4
-        let bytesPerRow = bytesPerPixel * width
-        let bitsPerComponent = 8
-
-        var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
-
-        guard
-            let context = CGContext(
-                data: &pixelData,
-                width: width,
-                height: height,
-                bitsPerComponent: bitsPerComponent,
-                bytesPerRow: bytesPerRow,
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            )
-        else { return updatedPhoto }
-
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        // 5. Ortalama hesapla
-        var sum: Double = 0
-        var values: [Double] = []
-
-        for y in 0..<height {
-            for x in 0..<width {
-                let offset = (y * width + x) * bytesPerPixel
-                let r = Double(pixelData[offset])
-                let g = Double(pixelData[offset + 1])
-                let b = Double(pixelData[offset + 2])
-                let gray = (r + g + b) / 3.0
-                values.append(gray)
-                sum += gray
+            // 3. Pixel değerlerini al
+            let extent = CGRect(x: 0, y: 0, width: 8, height: 8)
+            guard let cgImage = Self.analysisCIContext.createCGImage(scaledOutput, from: extent) else {
+                return
             }
-        }
 
-        let average = sum / Double(width * height)
+            // 4. Bitmap oluştur
+            let width = cgImage.width
+            let height = cgImage.height
+            let bytesPerPixel = 4
+            let bytesPerRow = bytesPerPixel * width
+            let bitsPerComponent = 8
 
-        // 6. Hash oluştur
-        var hash: UInt64 = 0
-        for (index, value) in values.enumerated() {
-            if value > average {
-                hash |= (1 << index)
+            var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+            guard
+                let context = CGContext(
+                    data: &pixelData,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: bitsPerComponent,
+                    bytesPerRow: bytesPerRow,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                )
+            else { return }
+
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+            // 5. Ortalama hesapla
+            var sum: Double = 0
+            var values: [Double] = []
+
+            for y in 0..<height {
+                for x in 0..<width {
+                    let offset = (y * width + x) * bytesPerPixel
+                    let r = Double(pixelData[offset])
+                    let g = Double(pixelData[offset + 1])
+                    let b = Double(pixelData[offset + 2])
+                    let gray = (r + g + b) / 3.0
+                    values.append(gray)
+                    sum += gray
+                }
             }
-        }
 
-        updatedPhoto.pHash = String(format: "%016llx", hash)
+            let average = sum / Double(width * height)
+
+            // 6. Hash oluştur
+            var hash: UInt64 = 0
+            for (index, value) in values.enumerated() {
+                if value > average {
+                    hash |= (1 << index)
+                }
+            }
+
+            updatedPhoto.pHash = String(format: "%016llx", hash)
+        }
+        
         return updatedPhoto
     }
 
@@ -460,35 +509,38 @@ class PhotoLibraryManager: ObservableObject {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
-        // Histogram filtresi uygula
-        let histogramFilter = CIFilter(name: "CIAreaHistogram")
-        histogramFilter?.setValue(ciImage, forKey: kCIInputImageKey)
-        histogramFilter?.setValue(
-            CIVector(x: 0, y: 0, z: ciImage.extent.width, w: ciImage.extent.height),
-            forKey: "inputExtent")
-        histogramFilter?.setValue(64, forKey: "inputCount")  // 64 bin histogram
-        histogramFilter?.setValue(1.0, forKey: "inputScale")
+        autoreleasepool {
+            // Histogram filtresi uygula
+            let histogramFilter = CIFilter(name: "CIAreaHistogram")
+            histogramFilter?.setValue(ciImage, forKey: kCIInputImageKey)
+            histogramFilter?.setValue(
+                CIVector(x: 0, y: 0, z: ciImage.extent.width, w: ciImage.extent.height),
+                forKey: "inputExtent")
+            histogramFilter?.setValue(64, forKey: "inputCount")  // 64 bin histogram
+            histogramFilter?.setValue(1.0, forKey: "inputScale")
 
-        guard let outputImage = histogramFilter?.outputImage else { return updatedPhoto }
+            guard let outputImage = histogramFilter?.outputImage else { return }
 
-        // Histogram verilerini çıkar
-        let extent = outputImage.extent
-        var bitmap = [UInt8](repeating: 0, count: Int(extent.width * extent.height * 4))
+            // Histogram verilerini çıkar
+            let extent = outputImage.extent
+            var bitmap = [UInt8](repeating: 0, count: Int(extent.width * extent.height * 4))
 
-        Self.analysisCIContext.render(
-            outputImage, toBitmap: &bitmap, rowBytes: Int(extent.width) * 4, bounds: extent,
-            format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
+            Self.analysisCIContext.render(
+                outputImage, toBitmap: &bitmap, rowBytes: Int(extent.width) * 4, bounds: extent,
+                format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
 
-        // Her renk kanalı için histogram değerleri
-        var histogramValues: [CGFloat] = []
-        for i in stride(from: 0, to: bitmap.count, by: 4) {
-            let r = CGFloat(bitmap[i])
-            let g = CGFloat(bitmap[i + 1])
-            let b = CGFloat(bitmap[i + 2])
-            histogramValues.append(contentsOf: [r, g, b])
+            // Her renk kanalı için histogram değerleri
+            var histogramValues: [CGFloat] = []
+            for i in stride(from: 0, to: bitmap.count, by: 4) {
+                let r = CGFloat(bitmap[i])
+                let g = CGFloat(bitmap[i + 1])
+                let b = CGFloat(bitmap[i + 2])
+                histogramValues.append(contentsOf: [r, g, b])
+            }
+
+            updatedPhoto.histogram = histogramValues
         }
-
-        updatedPhoto.histogram = histogramValues
+        
         return updatedPhoto
     }
 
@@ -498,13 +550,15 @@ class PhotoLibraryManager: ObservableObject {
         var updatedPhoto = photo
         guard let ciImage = photo.thumbnail else { return updatedPhoto }
 
-        // 1. Bulanıklık analizi (Laplacian Variance)
-        let blurScore = calculateBlurScore(ciImage)
-        updatedPhoto.blurScore = blurScore
+        autoreleasepool {
+            // 1. Bulanıklık analizi (Laplacian Variance)
+            let blurScore = calculateBlurScore(ciImage)
+            updatedPhoto.blurScore = blurScore
 
-        // 2. Parlaklık analizi
-        let brightnessScore = calculateBrightness(ciImage)
-        updatedPhoto.brightnessScore = brightnessScore
+            // 2. Parlaklık analizi
+            let brightnessScore = calculateBrightness(ciImage)
+            updatedPhoto.brightnessScore = brightnessScore
+        }
 
         return updatedPhoto
     }

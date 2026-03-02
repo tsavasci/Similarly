@@ -7,6 +7,7 @@
 
 import Photos
 import SwiftUI
+import ImageIO
 
 /// Benzer fotoğraf gruplarını liste halinde gösteren görünüm
 struct SimilarPhotosListView: View {
@@ -251,7 +252,6 @@ struct SimilarPhotosListView: View {
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
-                                        .padding(.leading, -20)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
@@ -281,7 +281,6 @@ struct SimilarPhotosListView: View {
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
-                                        .padding(.leading, -20)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
@@ -311,7 +310,6 @@ struct SimilarPhotosListView: View {
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
-                                        .padding(.leading, -20)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
@@ -414,7 +412,7 @@ struct SimilarGroupRow: View {
                 }
 
                 // Önizleme resimleri
-                HStack(spacing: -20) {
+                HStack(spacing: 8) {
                     ForEach(Array(group.photos.prefix(3)), id: \.id) { photo in
                         if let thumbnail = photo.thumbnail,
                             let uiImage = thumbnail.toUIImage()
@@ -444,6 +442,7 @@ struct SimilarGroupRow: View {
                                         .offset(x: 4, y: 4)
                                 }
                             }
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
@@ -507,13 +506,9 @@ struct SimilarPhotoDetailView: View {
     @State private var comparisonStartIndex = 0
     @Environment(\.dismiss) private var dismiss
 
-    private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-    ]
-
     var body: some View {
         VStack {
+
             // Üst bilgi
             VStack(spacing: 8) {
                 Text(L10n.f("similar.detail.count", group.count))
@@ -542,32 +537,47 @@ struct SimilarPhotoDetailView: View {
             .padding()
 
             // Fotoğraf grid'i
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 15) {
-                    ForEach(Array(group.photos.enumerated()), id: \.element.id) { index, photo in
-                        PhotoGridItem(
-                            photo: photo,
-                            isSelected: selectedPhotos.contains(photo.id),
-                            onTap: {
-                                // Favori fotoğrafları seçilmeye izin verme
-                                if photo.isFavorite {
-                                    return
-                                }
+            GeometryReader { geometry in
+                let spacing: CGFloat = 12
+                let horizontalPadding: CGFloat = 16
+                let totalHorizontalPadding = horizontalPadding * 2
+                let availableWidth = max(0, geometry.size.width - totalHorizontalPadding - spacing)
+                let cellWidth = floor(availableWidth / 2)
+                let columns = [
+                    GridItem(.fixed(cellWidth), spacing: spacing),
+                    GridItem(.fixed(cellWidth), spacing: spacing),
+                ]
 
-                                if selectedPhotos.contains(photo.id) {
-                                    selectedPhotos.remove(photo.id)
-                                } else {
-                                    selectedPhotos.insert(photo.id)
+                ScrollView {
+                    LazyVGrid(columns: columns, spacing: 15) {
+                        ForEach(Array(group.photos.enumerated()), id: \.element.id) { index, photo in
+                            PhotoGridItem(
+                                photo: photo,
+                                cellSize: cellWidth,
+                                isSelected: selectedPhotos.contains(photo.id),
+                                onTap: {
+                                    // Favori fotoğrafları seçilmeye izin verme
+                                    if photo.isFavorite {
+                                        return
+                                    }
+
+                                    if selectedPhotos.contains(photo.id) {
+                                        selectedPhotos.remove(photo.id)
+                                    } else {
+                                        selectedPhotos.insert(photo.id)
+                                    }
+                                },
+                                onLongPress: {
+                                    comparisonStartIndex = index
+                                    showingComparison = true
                                 }
-                            },
-                            onLongPress: {
-                                comparisonStartIndex = index
-                                showingComparison = true
-                            }
-                        )
+                            )
+                            .frame(width: cellWidth)
+                        }
                     }
+                    .padding(.horizontal, horizontalPadding)
+                    .padding(.vertical, 4)
                 }
-                .padding()
             }
 
             // Karşılaştırma butonu
@@ -689,60 +699,88 @@ struct SimilarPhotoDetailView: View {
 // MARK: - Photo Grid Item
 struct PhotoGridItem: View {
     let photo: PhotoItem
+    let cellSize: CGFloat
     let isSelected: Bool
     let onTap: () -> Void
     let onLongPress: () -> Void
 
+    @StateObject private var loader = AssetImageLoader()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            GeometryReader { geometry in
-                ZStack(alignment: .topTrailing) {
-                    if let thumbnail = photo.thumbnail,
-                        let uiImage = thumbnail.toUIImage()
-                    {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                            .cornerRadius(12)
-                    } else {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .cornerRadius(12)
-                            .overlay(
-                                ProgressView()
-                            )
-                    }
+            ZStack(alignment: .topTrailing) {
+                // Background to maintain bounds
+                Color.gray.opacity(0.05)
+                
+                if let image = loader.image {
+                    // Loader'dan gelen full-res image
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else if let thumbnail = photo.thumbnail,
+                    let uiImage = thumbnail.toUIImage()
+                {
+                    // Memory'de cache'lenmiş thumbnail
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    // Loading placeholder
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay(
+                            ProgressView()
+                                .frame(minHeight: 44)
+                        )
+                }
 
-                    // Favori badge (sol üst)
-                    if photo.isFavorite {
-                        VStack {
-                            HStack {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.yellow)
-                                    .padding(6)
-                                    .background(Circle().fill(Color.black.opacity(0.6)))
-                                Spacer()
-                            }
+                // Favori badge (sol üst)
+                if photo.isFavorite {
+                    VStack {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.yellow)
+                                .padding(6)
+                                .background(Circle().fill(Color.black.opacity(0.6)))
                             Spacer()
                         }
-                        .padding(8)
+                        Spacer()
                     }
+                    .padding(8)
+                }
 
-                    // Seçim işareti (sağ üst)
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                            .background(Circle().fill(Color.white))
-                            .padding(8)
-                    }
+                // Seçim işareti (sağ üst)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .background(Circle().fill(Color.white))
+                        .padding(8)
                 }
             }
-            .aspectRatio(1, contentMode: .fit)
+            .frame(width: cellSize, height: cellSize)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
+                        lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
+                    )
+            )
+            .onAppear {
+                // Thumbnail cache'de yoksa, loader ile yükle
+                // DispatchQueue kullanarak daha reliable delay sağla
+                guard photo.thumbnail == nil else { return }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak loader] in
+                    guard let loader = loader else { return }
+                    let scale = UIScreen.main.scale
+                    let side = max(1, cellSize * scale)
+                    let size = CGSize(width: side, height: side)
+                    loader.load(asset: photo.asset, targetSize: size)
+                }
+            }
 
             // Tarih bilgisi
             HStack {
@@ -764,13 +802,7 @@ struct PhotoGridItem: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(
-                    photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
-                    lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
-                )
-        )
+        .contentShape(RoundedRectangle(cornerRadius: 12))
         .opacity(photo.isFavorite ? 1.0 : (isSelected ? 1.0 : 0.95))
         .onTapGesture {
             onTap()
@@ -823,18 +855,63 @@ struct FullImageView: View {
     private func loadFullImage() {
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
+        options.resizeMode = .none
         options.isNetworkAccessAllowed = true
+        options.version = .current
 
-        PHImageManager.default().requestImage(
+        guard photo.asset.pixelWidth > 0, photo.asset.pixelHeight > 0 else {
+            return
+        }
+
+        let scale = UIScreen.main.scale
+        let bounds = UIScreen.main.bounds
+        let maxPixelSize = max(bounds.width, bounds.height) * scale
+
+        PHImageManager.default().requestImageDataAndOrientation(
             for: photo.asset,
-            targetSize: PHImageManagerMaximumSize,
-            contentMode: .aspectFit,
             options: options
-        ) { image, _ in
-            if let image = image {
-                fullImage = image
+        ) { data, _, _, info in
+            let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+            if cancelled { return }
+            guard let data = data else { return }
+
+            if let image = downsampleImage(from: data, maxPixelSize: maxPixelSize) {
+                DispatchQueue.main.async {
+                    fullImage = image
+                }
             }
         }
+    }
+
+    private func downsampleImage(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
+        let sourceOptions: [CFString: Any] = [
+            kCGImageSourceShouldCache: false
+        ]
+
+        guard
+            let source = CGImageSourceCreateWithData(data as CFData, sourceOptions as CFDictionary)
+        else {
+            return UIImage(data: data)
+        }
+
+        let thumbnailOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(1, Int(maxPixelSize.rounded(.up)))
+        ]
+
+        guard
+            let cgImage = CGImageSourceCreateThumbnailAtIndex(
+                source,
+                0,
+                thumbnailOptions as CFDictionary
+            )
+        else {
+            return UIImage(data: data)
+        }
+
+        return UIImage(cgImage: cgImage)
     }
 }
 
