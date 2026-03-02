@@ -13,7 +13,9 @@ private let conversionCIContext = CIContext(options: nil)
 extension UIImage {
     /// CIImage'den UIImage oluşturur
     convenience init?(ciImage: CIImage) {
-        guard let cgImage = conversionCIContext.createCGImage(ciImage, from: ciImage.extent) else {
+        guard !ciImage.extent.isEmpty,
+              let cgImage = conversionCIContext.createCGImage(ciImage, from: ciImage.extent) else {
+            print("SIMilarly-LOG: Failed in UIImage(ciImage:). Extent was empty or invalid: \(ciImage.extent)")
             return nil
         }
         self.init(cgImage: cgImage)
@@ -31,7 +33,10 @@ extension UIImage {
 extension CIImage {
     /// CIImage'den UIImage oluşturur
     func toUIImage() -> UIImage? {
-        guard let cgImage = conversionCIContext.createCGImage(self, from: self.extent) else {
+        guard !extent.isEmpty,
+              let cgImage = conversionCIContext.createCGImage(self, from: extent)
+        else {
+            print("SIMilarly-LOG: Failed to convert CIImage to UIImage. Extent was empty or invalid: \(extent)")
             return nil
         }
         return UIImage(cgImage: cgImage)

@@ -163,9 +163,9 @@ struct QualityPhotoGrid: View {
     }
 
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible()),
+        GridItem(.flexible(minimum: 100), spacing: 8),
+        GridItem(.flexible(minimum: 100), spacing: 8),
+        GridItem(.flexible(minimum: 100), spacing: 8),
     ]
 
     var body: some View {

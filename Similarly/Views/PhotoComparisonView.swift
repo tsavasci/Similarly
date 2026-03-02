@@ -7,6 +7,7 @@
 
 import Photos
 import SwiftUI
+import UIKit
 
 /// Yan yana karşılaştırma ile fotoğraf seçim görünümü
 struct PhotoComparisonView: View {
@@ -17,7 +18,6 @@ struct PhotoComparisonView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
-    @State private var fullImages: [String: UIImage] = [:]
 
     init(photos: [PhotoItem], initialIndex: Int = 0, onSelect: @escaping ([PhotoItem]) -> Void) {
         self.photos = photos
@@ -64,15 +64,14 @@ struct PhotoComparisonView: View {
                 ScrollView {
                     LazyVGrid(
                         columns: [
-                            GridItem(.flexible(), spacing: 12),
-                            GridItem(.flexible(), spacing: 12),
+                            GridItem(.flexible(minimum: 150), spacing: 12),
+                            GridItem(.flexible(minimum: 150), spacing: 12),
                         ],
                         spacing: 12
                     ) {
                         ForEach(photos) { photo in
                             ComparisonPhotoCard(
                                 photo: photo,
-                                fullImage: fullImages[photo.id],
                                 isSelected: selectedPhotos.contains(photo.id),
                                 onTap: {
                                     if photo.isFavorite {
@@ -91,6 +90,7 @@ struct PhotoComparisonView: View {
                                     showingFullImage = photo
                                 }
                             )
+                            .frame(minHeight: 150)
                         }
                     }
                     .padding()
@@ -184,34 +184,9 @@ struct PhotoComparisonView: View {
         .fullScreenCover(item: $showingFullImage) { photo in
             FullImageView(photo: photo)
         }
-        .onAppear {
-            loadImages()
-        }
     }
 
     // MARK: - Helper Functions
-    private func loadImages() {
-        for photo in photos {
-            loadFullImage(for: photo)
-        }
-    }
-
-    private func loadFullImage(for photo: PhotoItem) {
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-
-        PHImageManager.default().requestImage(
-            for: photo.asset,
-            targetSize: CGSize(width: 500, height: 500),
-            contentMode: .aspectFill,
-            options: options
-        ) { image, _ in
-            if let image = image {
-                fullImages[photo.id] = image
-            }
-        }
-    }
 
     private func finalizeSelections() {
         // Seçilen fotoğrafları işle
@@ -233,75 +208,88 @@ struct PhotoComparisonView: View {
 // MARK: - Comparison Photo Card
 struct ComparisonPhotoCard: View {
     let photo: PhotoItem
-    let fullImage: UIImage?
     let isSelected: Bool
     let onTap: () -> Void
     let onLongPress: () -> Void
 
+    @StateObject private var loader = AssetImageLoader()
+
     var body: some View {
         VStack(spacing: 8) {
-            GeometryReader { geometry in
-                ZStack(alignment: .topLeading) {
-                    // Fotoğraf
-                    if let image = fullImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                            .cornerRadius(12)
-                    } else if let thumbnail = photo.thumbnail,
-                        let uiImage = thumbnail.toUIImage()
-                    {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                            .cornerRadius(12)
-                            .overlay(
-                                ProgressView()
-                            )
-                    } else {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .cornerRadius(12)
-                            .overlay(
-                                ProgressView()
-                            )
-                    }
+            ZStack(alignment: .topLeading) {
+                // Background to maintain bounds
+                Color.gray.opacity(0.05)
+                
+                if let image = loader.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else if let thumbnail = photo.thumbnail, let uiImage = thumbnail.toUIImage() {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .overlay(
+                            ProgressView()
+                                .frame(minHeight: 44)
+                        )
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay(
+                            ProgressView()
+                                .frame(minHeight: 44)
+                        )
+                }
 
-                    // Favori badge
-                    if photo.isFavorite {
+                // Favori badge
+                if photo.isFavorite {
+                    HStack {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.yellow)
+                            .padding(6)
+                            .background(Circle().fill(Color.black.opacity(0.6)))
+                        Spacer()
+                    }
+                    .padding(8)
+                }
+
+                // Seçim işareti
+                if isSelected {
+                    VStack {
                         HStack {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.yellow)
-                                .padding(6)
-                                .background(Circle().fill(Color.black.opacity(0.6)))
                             Spacer()
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                                .background(Circle().fill(Color.white))
+                                .padding(8)
                         }
-                        .padding(8)
-                    }
-
-                    // Seçim işareti
-                    if isSelected {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.blue)
-                                    .background(Circle().fill(Color.white))
-                                    .padding(8)
-                            }
-                            Spacer()
-                        }
+                        Spacer()
                     }
                 }
             }
             .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
+                        lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
+                    )
+            )
+            .onAppear {
+                // DispatchQueue kullanarak daha reliable delay sağla
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak loader] in
+                    guard let loader = loader else { return }
+                    let scale = UIScreen.main.scale
+                    // Fixed size: 150x150
+                    let baseSize: CGFloat = 150.0
+                    let size = CGSize(width: baseSize * scale, height: baseSize * scale)
+                    loader.load(asset: photo.asset, targetSize: size)
+                }
+            }
 
             // Metadata bilgileri
             VStack(spacing: 4) {
@@ -352,13 +340,7 @@ struct ComparisonPhotoCard: View {
                 .foregroundColor(.secondary)
             }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(
-                    photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
-                    lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
-                )
-        )
+        .contentShape(RoundedRectangle(cornerRadius: 12))
         .opacity(photo.isFavorite ? 0.7 : 1.0)
         .onTapGesture {
             onTap()

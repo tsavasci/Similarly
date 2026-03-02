@@ -265,8 +265,9 @@ class SimilarityManager: ObservableObject {
                 }
             }
 
-            // Sadece indekslenmiş adayları karşılaştır
-            for candidateIndex in candidateIndexes.sorted() {
+            // Sadece indekslenmiş adayları karşılaştır - Set'ten Array'e konvert et, sorted() kullanma
+            let candidateArray = Array(candidateIndexes)
+            for candidateIndex in candidateArray {
                 if candidateIndex == index {
                     continue
                 }
@@ -405,31 +406,39 @@ class SimilarityManager: ObservableObject {
         var totalScore: Double = 0.0
         var scoreCount = 0
 
-        // 1. pHash karşılaştırması (en önemli)
-        if let hash1 = photo1.pHash, let hash2 = photo2.pHash {
-            let hammingDistance = calculateHammingDistance(hash1, hash2)
-            if hammingDistance > pHashThreshold {
-                return 0.0
-            }
-            let pHashScore = 1.0 - (Double(hammingDistance) / 64.0)  // 64 bit hash
-            totalScore += pHashScore * 2.0  // pHash'e daha fazla ağırlık ver
-            scoreCount += 2
-        }
-
-        // 2. Histogram karşılaştırması
-        if let hist1 = photo1.histogram, let hist2 = photo2.histogram {
-            let histScore = compareHistograms(hist1, hist2)
-            totalScore += histScore
-            scoreCount += 1
-        }
-
-        // 3. Metadata bonusu
+        // 1. Metadata bonusu - hızlı check, en önce yap
+        var hasMetadataBonus = false
         if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
             let timeDiff = abs(date1.timeIntervalSince(date2))
             if timeDiff <= dateThresholdSeconds {
                 totalScore += 0.3  // Seri çekim bonusu
                 scoreCount += 1
+                hasMetadataBonus = true
             }
+        }
+
+        // 2. pHash karşılaştırması (en önemli, threshold check ile early exit)
+        if let hash1 = photo1.pHash, let hash2 = photo2.pHash {
+            let hammingDistance = calculateHammingDistance(hash1, hash2)
+            if hammingDistance > pHashThreshold {
+                // pHash threshold başarısız - metadata bonusu varsa onu döndür, yoksa 0.0
+                return hasMetadataBonus ? (totalScore / Double(scoreCount)) : 0.0
+            }
+            let pHashScore = 1.0 - (Double(hammingDistance) / 64.0)  // 64 bit hash
+            totalScore += pHashScore * 2.0  // pHash'e daha fazla ağırlık ver
+            scoreCount += 2
+        } else {
+            // Hash olmayan fotoğraflar - metadata bonusu yoksa early exit
+            if !hasMetadataBonus {
+                return 0.0
+            }
+        }
+
+        // 3. Histogram karşılaştırması (son aşama)
+        if let hist1 = photo1.histogram, let hist2 = photo2.histogram {
+            let histScore = compareHistograms(hist1, hist2)
+            totalScore += histScore
+            scoreCount += 1
         }
 
         return scoreCount > 0 ? totalScore / Double(scoreCount) : 0.0
