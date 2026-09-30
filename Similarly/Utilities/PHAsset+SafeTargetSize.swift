@@ -8,7 +8,7 @@
 import CoreGraphics
 import Photos
 
-extension PHAsset {
+nonisolated extension PHAsset {
     /// Calculates an aspect-fit target size with a guaranteed minimum edge.
     /// This avoids PhotoKit requests that can collapse to `Nx0` for ultra-wide/tall assets.
     func safeAspectFitTargetSize(in boundingSize: CGSize, minimumEdge: CGFloat = 1) -> CGSize {

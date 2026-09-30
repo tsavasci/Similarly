@@ -170,7 +170,7 @@ struct SettingsView: View {
                         HStack {
                             Text(L10n.k("settings.similarity.title"))
                             Spacer()
-                            Text("\(Int(similarityThreshold * 100))%")
+                            Text(L10n.percent(similarityThreshold))
                                 .foregroundColor(.secondary)
                         }
 
@@ -252,7 +252,7 @@ struct SettingsView: View {
                         HStack {
                             Text(L10n.k("settings.dark_threshold.title"))
                             Spacer()
-                            Text("\(Int(darknessThreshold * 100))%")
+                            Text(L10n.percent(darknessThreshold))
                                 .foregroundColor(.secondary)
                         }
 
@@ -269,7 +269,7 @@ struct SettingsView: View {
                         HStack {
                             Text(L10n.k("settings.brightness_threshold.title"))
                             Spacer()
-                            Text("\(Int(brightnessThreshold * 100))%")
+                            Text(L10n.percent(brightnessThreshold))
                                 .foregroundColor(.secondary)
                         }
 

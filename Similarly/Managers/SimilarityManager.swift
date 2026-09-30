@@ -6,14 +6,14 @@
 //
 
 import Combine
-import CoreImage
-import CoreLocation
 import Foundation
 import Photos
+import os
 
-/// Fotoğrafları karşılaştıran ve benzer gruplar oluşturan sınıf
+private let logger = Logger(subsystem: "com.similarly.app", category: "similarity")
+
 @MainActor
-class SimilarityManager: ObservableObject {
+final class SimilarityManager: ObservableObject {
     @Published var similarGroups: [SimilarPhotoGroup] = []
     @Published var duplicateGroups: [SimilarPhotoGroup] = []
     @Published var screenshotGroups: [SimilarPhotoGroup] = []
@@ -22,128 +22,122 @@ class SimilarityManager: ObservableObject {
     @Published var brightPhotos: [PhotoItem] = []
     @Published var videos: [PhotoItem] = []
     @Published var livePhotos: [PhotoItem] = []
-    @Published var isAnalyzing = false
-    @Published var analysisProgress: Double = 0.0
+    @Published private(set) var isAnalyzing = false
+    @Published private(set) var analysisProgress: Double = 0.0
+    /// Her gruptan en iyi fotoğraf tutulup diğerleri silinirse kazanılacak tahmini alan (bayt)
+    @Published private(set) var potentialSavings: Int64 = 0
+    /// Son analizdeki görsel sayısı ve bunlardan başarıyla analiz edilebilenlerin sayısı
+    @Published private(set) var imageCount = 0
+    @Published private(set) var analyzedImageCount = 0
+
+    /// Görsel var ama hiçbiri analiz edilemediyse true; bu durumda "kütüphane temiz" demek yanıltıcı olur.
+    var isAnalysisUnavailable: Bool {
+        imageCount > 0 && analyzedImageCount == 0
+    }
 
     // Benzerlik eşikleri - UserDefaults'tan alınıyor
-    private var dateThresholdSeconds: TimeInterval {
-        UserDefaults.standard.doubleValue(
-            forKey: "dateThreshold",
-            default: AppDefaults.dateThresholdSeconds
+    private var currentSettings: SimilaritySettings {
+        let defaults = UserDefaults.standard
+        return SimilaritySettings(
+            similarityThreshold: defaults.doubleValue(
+                forKey: "similarityThreshold",
+                default: AppDefaults.similarityThreshold
+            ),
+            dateThresholdSeconds: defaults.doubleValue(
+                forKey: "dateThreshold",
+                default: AppDefaults.dateThresholdSeconds
+            ),
+            locationThresholdMeters: defaults.doubleValue(
+                forKey: "locationThreshold",
+                default: AppDefaults.locationThresholdMeters
+            )
         )
-    }
-
-    private var locationThresholdMeters: Double {
-        UserDefaults.standard.doubleValue(
-            forKey: "locationThreshold",
-            default: AppDefaults.locationThresholdMeters
-        )
-    }
-
-    private var similarityThreshold: Double {
-        UserDefaults.standard.doubleValue(
-            forKey: "similarityThreshold",
-            default: AppDefaults.similarityThreshold
-        )
-    }
-
-    private var pHashThreshold: Int {
-        // Benzerlik threshold'una göre dinamik hesapla
-        // 0.85 = 10 hamming distance
-        // 0.70 = 15 hamming distance
-        // 0.95 = 5 hamming distance
-        let similarity = similarityThreshold
-        if similarity >= 0.95 {
-            return 5
-        } else if similarity >= 0.85 {
-            return 10
-        } else if similarity >= 0.75 {
-            return 12
-        } else {
-            return 15
-        }
     }
 
     private var blurThreshold: Double {
-        UserDefaults.standard.doubleValue(
-            forKey: "blurThreshold",
-            default: AppDefaults.blurThreshold
-        )
+        UserDefaults.standard.doubleValue(forKey: "blurThreshold", default: AppDefaults.blurThreshold)
     }
 
     private var darknessThreshold: Double {
-        UserDefaults.standard.doubleValue(
-            forKey: "darknessThreshold",
-            default: AppDefaults.darknessThreshold
-        )
+        UserDefaults.standard.doubleValue(forKey: "darknessThreshold", default: AppDefaults.darknessThreshold)
     }
 
     private var brightnessThreshold: Double {
-        UserDefaults.standard.doubleValue(
-            forKey: "brightnessThreshold",
-            default: AppDefaults.brightnessThreshold
-        )
+        UserDefaults.standard.doubleValue(forKey: "brightnessThreshold", default: AppDefaults.brightnessThreshold)
     }
 
     // MARK: - Main Analysis Function
 
-    func findSimilarPhotos(from photos: [PhotoItem]) async {
+    /// Benzer fotoğrafları ve kalite sorunlarını bulur. Ağır hesaplama ana thread dışında yapılır;
+    /// çağıran görev iptal edilirse sonuçlar boş bırakılır.
+    func findSimilarPhotos(from photos: [PhotoItem], featurePrints: [String: [Float]]) async {
         isAnalyzing = true
         analysisProgress = 0.0
-        similarGroups = []
+        resetResults()
 
-        // Videoları ve Live Photos'ları ayır
         videos = photos.filter { $0.mediaType == .video }
         livePhotos = photos.filter { $0.isLivePhoto }
 
-        // Sadece image'ları analiz et
-        let imagesToAnalyze = photos.filter { $0.mediaType == .image }
+        let images = photos.filter { $0.mediaType == .image }
+        imageCount = images.count
+        analyzedImageCount = images.filter { featurePrints[$0.id] != nil }.count
+        detectQualityIssues(images)
 
-        print(L10n.f("log.similarity.start", imagesToAnalyze.count))
-        if !videos.isEmpty {
-            print(L10n.f("log.similarity.videos_found", videos.count))
+        let snapshots = images.map { photo in
+            PhotoSnapshot(
+                id: photo.id,
+                creationDate: photo.creationDate,
+                latitude: photo.location?.coordinate.latitude,
+                longitude: photo.location?.coordinate.longitude,
+                pixelWidth: photo.pixelWidth,
+                pixelHeight: photo.pixelHeight
+            )
         }
-        if !livePhotos.isEmpty {
-            print(L10n.f("log.similarity.live_found", livePhotos.count))
-        }
 
-        // 1. Metadata ile ön filtreleme yap
-        let candidateGroups = await filterByMetadata(imagesToAnalyze)
-        analysisProgress = 0.3
+        logger.info("Similarity analysis started for \(images.count) images")
 
-        print(L10n.f("log.similarity.candidates_found", candidateGroups.count))
-
-        // 2. Görüntü bazlı benzerlik analizi
-        var finalGroups: [SimilarPhotoGroup] = []
-
-        for (index, group) in candidateGroups.enumerated() {
-            if group.count > 1 {
-                let similarGroup = await analyzeImageSimilarity(group)
-                // Kullanıcı eşiğine göre yeterince benzer grupları ekle
-                if similarGroup.count > 1 && similarGroup.similarityScore >= similarityThreshold {
-                    finalGroups.append(similarGroup)
+        do {
+            let clusters = try await SimilarityEngine.run(
+                photos: snapshots,
+                vectors: featurePrints,
+                settings: currentSettings
+            ) { [weak self] progress in
+                Task { @MainActor [weak self] in
+                    guard let self, self.isAnalyzing else { return }
+                    self.analysisProgress = progress
                 }
             }
 
-            let progress = 0.3 + (0.7 * Double(index + 1) / Double(candidateGroups.count))
-            analysisProgress = progress
+            let photosByID = Dictionary(images.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let groups = clusters.map { cluster in
+                SimilarPhotoGroup(
+                    photos: cluster.memberIDs.compactMap { photosByID[$0] },
+                    similarityScore: cluster.score,
+                    isDuplicate: cluster.isDuplicate
+                )
+            }
+            categorizeGroups(groups)
+            analysisProgress = 1.0
+            logger.info(
+                "Found \(self.duplicateGroups.count) duplicate, \(self.screenshotGroups.count) screenshot, \(self.similarGroups.count) similar groups"
+            )
+        } catch {
+            // İptal edildi: yarım sonuç gösterme.
+            resetResults()
+            logger.info("Similarity analysis cancelled")
         }
 
-        // Grupları kategorilere ayır
-        categorizeGroups(finalGroups)
-
         isAnalyzing = false
-        analysisProgress = 1.0
+    }
 
-        // Kalite sorunlu fotoğrafları filtrele
-        detectQualityIssues(imagesToAnalyze)
-
-        print(L10n.f("log.similarity.groups_similar", similarGroups.count))
-        print(L10n.f("log.similarity.groups_duplicate", duplicateGroups.count))
-        print(L10n.f("log.similarity.groups_screenshot", screenshotGroups.count))
-        print(L10n.f("log.similarity.blurry_found", blurryPhotos.count))
-        print(L10n.f("log.similarity.dark_found", darkPhotos.count))
-        print(L10n.f("log.similarity.bright_found", brightPhotos.count))
+    private func resetResults() {
+        similarGroups = []
+        duplicateGroups = []
+        screenshotGroups = []
+        blurryPhotos = []
+        darkPhotos = []
+        brightPhotos = []
+        potentialSavings = 0
     }
 
     // MARK: - Group Categorization
@@ -153,7 +147,7 @@ class SimilarityManager: ObservableObject {
         var screenshots: [SimilarPhotoGroup] = []
         var similar: [SimilarPhotoGroup] = []
 
-        for group in groups {
+        for group in groups where group.count > 1 {
             // Her grupta favorileri korumak için sırala
             let sortedGroup = sortGroupWithFavoritesFirst(group)
 
@@ -170,10 +164,12 @@ class SimilarityManager: ObservableObject {
         duplicateGroups = duplicates.sorted { $0.similarityScore > $1.similarityScore }
         screenshotGroups = screenshots.sorted { $0.similarityScore > $1.similarityScore }
         similarGroups = similar.sorted { $0.similarityScore > $1.similarityScore }
+        recalculateSavings()
     }
 
     private func sortGroupWithFavoritesFirst(_ group: SimilarPhotoGroup) -> SimilarPhotoGroup {
-        let sortedPhotos = group.photos.sorted { photo1, photo2 in
+        var sorted = group
+        sorted.photos = group.photos.sorted { photo1, photo2 in
             // 1. Favoriler önce
             if photo1.isFavorite != photo2.isFavorite {
                 return photo1.isFavorite
@@ -187,36 +183,32 @@ class SimilarityManager: ObservableObject {
             }
 
             // 3. Yeni tarih önce
-            if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
-                return date1 > date2
-            }
-
-            return false
+            return (photo1.creationDate ?? .distantPast) > (photo2.creationDate ?? .distantPast)
         }
-
-        return SimilarPhotoGroup(
-            photos: sortedPhotos,
-            similarityScore: group.similarityScore
-        )
+        return sorted
     }
 
     // MARK: - Quality Issue Detection
 
     private func detectQualityIssues(_ photos: [PhotoItem]) {
+        let blurLimit = blurThreshold
+        let darkLimit = darknessThreshold
+        let brightLimit = brightnessThreshold
+
         var blurry: [PhotoItem] = []
         var dark: [PhotoItem] = []
         var bright: [PhotoItem] = []
 
-        for photo in photos {
-            // Kullanıcı eşikleri ile karşılaştır
-            if let blurScore = photo.blurScore, blurScore <= blurThreshold {
+        for photo in photos where photo.hasAnalysis && !photo.qualityDismissed {
+            if let blurScore = photo.blurScore, blurScore <= blurLimit {
                 blurry.append(photo)
             }
-            if let brightnessScore = photo.brightnessScore, brightnessScore <= darknessThreshold {
-                dark.append(photo)
-            }
-            if let brightnessScore = photo.brightnessScore, brightnessScore >= brightnessThreshold {
-                bright.append(photo)
+            if let brightnessScore = photo.brightnessScore {
+                if brightnessScore <= darkLimit {
+                    dark.append(photo)
+                } else if brightnessScore >= brightLimit {
+                    bright.append(photo)
+                }
             }
         }
 
@@ -226,414 +218,30 @@ class SimilarityManager: ObservableObject {
         brightPhotos = bright.sorted { ($0.brightnessScore ?? 0) > ($1.brightnessScore ?? 0) }
     }
 
-    // MARK: - Metadata Filtering
+    // MARK: - Removing Photos
 
-    private func filterByMetadata(_ photos: [PhotoItem]) async -> [[PhotoItem]] {
-        guard !photos.isEmpty else { return [] }
+    /// Silinen (veya kütüphaneden kaybolan) fotoğrafları tüm sonuç listelerinden çıkarır.
+    /// Tek fotoğrafı kalan gruplar düşürülür; yeniden analiz gerekmez.
+    func removePhotos(ids: Set<String>) {
+        guard !ids.isEmpty else { return }
 
-        let indexes = buildMetadataIndexes(for: photos)
-        var groups: [[PhotoItem]] = []
-        var processed = Set<String>()
-
-        for (index, photo) in photos.enumerated() {
-            if processed.contains(photo.id) {
-                continue
-            }
-
-            var group = [photo]
-            processed.insert(photo.id)
-            var candidateIndexes = Set<Int>()
-
-            if let date = photo.creationDate {
-                let bucket = Int(floor(date.timeIntervalSince1970 / indexes.dateBucketSize))
-                for neighborBucket in (bucket - 1)...(bucket + 1) {
-                    if let indices = indexes.dateBuckets[neighborBucket] {
-                        candidateIndexes.formUnion(indices)
-                    }
-                }
-            }
-
-            if let location = photo.location {
-                let cell = locationCell(for: location, cellSizeMeters: indexes.locationCellSize)
-                for xOffset in -1...1 {
-                    for yOffset in -1...1 {
-                        let neighborCell = LocationCell(x: cell.x + xOffset, y: cell.y + yOffset)
-                        if let indices = indexes.locationBuckets[neighborCell] {
-                            candidateIndexes.formUnion(indices)
-                        }
-                    }
-                }
-            }
-
-            // Sadece indekslenmiş adayları karşılaştır - Set'ten Array'e konvert et, sorted() kullanma
-            let candidateArray = Array(candidateIndexes)
-            for candidateIndex in candidateArray {
-                if candidateIndex == index {
-                    continue
-                }
-
-                let otherPhoto = photos[candidateIndex]
-                if processed.contains(otherPhoto.id) {
-                    continue
-                }
-
-                if isMetadataSimilar(photo, otherPhoto) {
-                    group.append(otherPhoto)
-                    processed.insert(otherPhoto.id)
-                }
-            }
-
-            groups.append(group)
-        }
-
-        return groups
-    }
-
-    private func buildMetadataIndexes(for photos: [PhotoItem]) -> MetadataIndexes {
-        // Metadata kuralında en geniş tarih penceresi 60 saniye.
-        let dateBucketSize = max(1.0, max(dateThresholdSeconds, 60.0))
-        let locationCellSize = max(1.0, locationThresholdMeters)
-        var dateBuckets: [Int: [Int]] = [:]
-        var locationBuckets: [LocationCell: [Int]] = [:]
-
-        for (index, photo) in photos.enumerated() {
-            if let date = photo.creationDate {
-                let bucket = Int(floor(date.timeIntervalSince1970 / dateBucketSize))
-                dateBuckets[bucket, default: []].append(index)
-            }
-
-            if let location = photo.location {
-                let cell = locationCell(for: location, cellSizeMeters: locationCellSize)
-                locationBuckets[cell, default: []].append(index)
+        func prune(_ groups: [SimilarPhotoGroup]) -> [SimilarPhotoGroup] {
+            groups.compactMap { group in
+                var updated = group
+                updated.photos.removeAll { ids.contains($0.id) }
+                return updated.count > 1 ? updated : nil
             }
         }
 
-        return MetadataIndexes(
-            dateBuckets: dateBuckets,
-            locationBuckets: locationBuckets,
-            dateBucketSize: dateBucketSize,
-            locationCellSize: locationCellSize
-        )
-    }
-
-    private func locationCell(for location: CLLocation, cellSizeMeters: Double) -> LocationCell {
-        // Web Mercator projection ile enleme göre değişen ölçek sorununu azalt.
-        let earthRadius = 6_378_137.0
-        let latitudeRadians = location.coordinate.latitude * .pi / 180.0
-        let longitudeRadians = location.coordinate.longitude * .pi / 180.0
-        let clampedLatitude = min(max(latitudeRadians, -1.4844222297453324), 1.4844222297453324)
-        let xMeters = earthRadius * longitudeRadians
-        let yMeters = earthRadius * log(tan(.pi / 4.0 + clampedLatitude / 2.0))
-
-        return LocationCell(
-            x: Int(floor(xMeters / cellSizeMeters)),
-            y: Int(floor(yMeters / cellSizeMeters))
-        )
-    }
-
-    private func isMetadataSimilar(_ photo1: PhotoItem, _ photo2: PhotoItem) -> Bool {
-        // Tarih yakınlığı kontrolü (seri çekim)
-        if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
-            let timeDiff = abs(date1.timeIntervalSince(date2))
-            if timeDiff <= dateThresholdSeconds {
-                return true
-            }
-        }
-
-        // Lokasyon yakınlığı kontrolü
-        if let loc1 = photo1.location, let loc2 = photo2.location {
-            let distance = loc1.distance(from: loc2)
-            if distance <= locationThresholdMeters {
-                return true
-            }
-        }
-
-        // Boyut benzerliği (aynı kamera/ayarlar)
-        let size1 = photo1.pixelWidth * photo1.pixelHeight
-        let size2 = photo2.pixelWidth * photo2.pixelHeight
-        let sizeDiff = abs(Double(size1 - size2)) / Double(max(size1, size2))
-        if sizeDiff < 0.1 {  // %10 fark
-            // Aynı boyutsa ve yakın tarihliyse grup adayı
-            if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
-                let timeDiff = abs(date1.timeIntervalSince(date2))
-                if timeDiff <= 60.0 {  // 1 dakika içinde
-                    return true
-                }
-            }
-        }
-
-        return false
-    }
-
-    // MARK: - Image Similarity Analysis
-
-    private func analyzeImageSimilarity(_ photos: [PhotoItem]) async -> SimilarPhotoGroup {
-        var similarPhotos: [PhotoItem] = []
-        var similarPhotoIds = Set<String>()
-        var totalScore: Double = 0.0
-        var comparisonCount = 0
-        let candidatePairs = buildCandidatePairs(for: photos)
-
-        for pair in candidatePairs {
-            let score = comparePhotos(photos[pair.first], photos[pair.second])
-
-            if score >= similarityThreshold {
-                totalScore += score
-                comparisonCount += 1
-
-                // O(1) üyelik kontrolü ile gereksiz taramayı azalt.
-                if similarPhotoIds.insert(photos[pair.first].id).inserted {
-                    similarPhotos.append(photos[pair.first])
-                }
-
-                if similarPhotoIds.insert(photos[pair.second].id).inserted {
-                    similarPhotos.append(photos[pair.second])
-                }
-            }
-        }
-
-        let averageScore = comparisonCount > 0 ? totalScore / Double(comparisonCount) : 0.0
-
-        return SimilarPhotoGroup(
-            photos: similarPhotos.isEmpty ? photos : similarPhotos,
-            similarityScore: averageScore
-        )
-    }
-
-    // MARK: - Photo Comparison
-
-    func comparePhotos(_ photo1: PhotoItem, _ photo2: PhotoItem) -> Double {
-        var totalScore: Double = 0.0
-        var scoreCount = 0
-
-        // 1. Metadata bonusu - hızlı check, en önce yap
-        var hasMetadataBonus = false
-        if let date1 = photo1.creationDate, let date2 = photo2.creationDate {
-            let timeDiff = abs(date1.timeIntervalSince(date2))
-            if timeDiff <= dateThresholdSeconds {
-                totalScore += 0.3  // Seri çekim bonusu
-                scoreCount += 1
-                hasMetadataBonus = true
-            }
-        }
-
-        // 2. pHash karşılaştırması (en önemli, threshold check ile early exit)
-        if let hash1 = photo1.pHash, let hash2 = photo2.pHash {
-            let hammingDistance = calculateHammingDistance(hash1, hash2)
-            if hammingDistance > pHashThreshold {
-                // pHash threshold başarısız - metadata bonusu varsa onu döndür, yoksa 0.0
-                return hasMetadataBonus ? (totalScore / Double(scoreCount)) : 0.0
-            }
-            let pHashScore = 1.0 - (Double(hammingDistance) / 64.0)  // 64 bit hash
-            totalScore += pHashScore * 2.0  // pHash'e daha fazla ağırlık ver
-            scoreCount += 2
-        } else {
-            // Hash olmayan fotoğraflar - metadata bonusu yoksa early exit
-            if !hasMetadataBonus {
-                return 0.0
-            }
-        }
-
-        // 3. Histogram karşılaştırması (son aşama)
-        if let hist1 = photo1.histogram, let hist2 = photo2.histogram {
-            let histScore = compareHistograms(hist1, hist2)
-            totalScore += histScore
-            scoreCount += 1
-        }
-
-        return scoreCount > 0 ? totalScore / Double(scoreCount) : 0.0
-    }
-
-    // MARK: - Hamming Distance (pHash için)
-
-    private func calculateHammingDistance(_ hash1: String, _ hash2: String) -> Int {
-        guard hash1.count == hash2.count else { return 64 }  // Maksimum fark
-
-        var distance = 0
-
-        let chars1 = Array(hash1)
-        let chars2 = Array(hash2)
-
-        for i in 0..<chars1.count {
-            if chars1[i] != chars2[i] {
-                // Hex karakterlerdeki bit farklarını say
-                if let val1 = Int(String(chars1[i]), radix: 16),
-                    let val2 = Int(String(chars2[i]), radix: 16)
-                {
-                    let xor = val1 ^ val2
-                    distance += xor.nonzeroBitCount
-                }
-            }
-        }
-
-        return distance
-    }
-
-    // MARK: - Histogram Comparison
-
-    private func compareHistograms(_ hist1: [CGFloat], _ hist2: [CGFloat]) -> Double {
-        guard hist1.count == hist2.count, !hist1.isEmpty else { return 0.0 }
-
-        // Bhattacharyya distance kullanarak benzerlik hesapla
-        let sum1 = hist1.reduce(0, +)
-        let sum2 = hist2.reduce(0, +)
-
-        guard sum1 > 0, sum2 > 0 else { return 0.0 }
-
-        // Normalize et
-        let norm1 = hist1.map { $0 / sum1 }
-        let norm2 = hist2.map { $0 / sum2 }
-
-        // Bhattacharyya coefficient
-        var bc: CGFloat = 0.0
-        for i in 0..<norm1.count {
-            bc += sqrt(norm1[i] * norm2[i])
-        }
-
-        // Similarity score (0-1 arası)
-        let similarity = Double(bc)
-
-        return similarity
-    }
-
-    private func buildCandidatePairs(for photos: [PhotoItem]) -> [PhotoPair] {
-        guard photos.count > 1 else { return [] }
-
-        let threshold = min(max(pHashThreshold, 0), 63)
-        let segmentCount = min(64, max(1, threshold + 1))
-        let segments = buildHashSegments(count: segmentCount)
-
-        var hashByIndex: [Int: UInt64] = [:]
-        var buckets: [PHashBucketKey: [Int]] = [:]
-        var nonHashedIndices: [Int] = []
-
-        for (index, photo) in photos.enumerated() {
-            guard let hashString = photo.pHash, let hashValue = UInt64(hashString, radix: 16) else {
-                nonHashedIndices.append(index)
-                continue
-            }
-
-            hashByIndex[index] = hashValue
-            for segment in segments {
-                let key = PHashBucketKey(
-                    segmentIndex: segment.index,
-                    value: extractSegmentValue(from: hashValue, segment: segment)
-                )
-                buckets[key, default: []].append(index)
-            }
-        }
-
-        var candidatePairs = Set<PhotoPair>()
-        let nonHashedSet = Set(nonHashedIndices)
-
-        for i in photos.indices {
-            if let hashValue = hashByIndex[i] {
-                var neighbors = Set<Int>()
-                for segment in segments {
-                    let key = PHashBucketKey(
-                        segmentIndex: segment.index,
-                        value: extractSegmentValue(from: hashValue, segment: segment)
-                    )
-                    if let indices = buckets[key] {
-                        for j in indices where j > i {
-                            neighbors.insert(j)
-                        }
-                    }
-                }
-
-                // Hash olmayan fotoğraflarla karşılaştırmayı koru.
-                for j in nonHashedSet where j > i {
-                    neighbors.insert(j)
-                }
-
-                for j in neighbors {
-                    candidatePairs.insert(PhotoPair(first: i, second: j))
-                }
-            } else {
-                // Hash olmayanlar için fallback: önceki davranışı korumak adına tam tarama.
-                for j in (i + 1)..<photos.count {
-                    candidatePairs.insert(PhotoPair(first: i, second: j))
-                }
-            }
-        }
-
-        return candidatePairs.sorted { lhs, rhs in
-            if lhs.first == rhs.first {
-                return lhs.second < rhs.second
-            }
-            return lhs.first < rhs.first
-        }
-    }
-
-    private func buildHashSegments(count: Int) -> [HashSegment] {
-        let base = 64 / count
-        let remainder = 64 % count
-        var segments: [HashSegment] = []
-        segments.reserveCapacity(count)
-
-        var currentStart = 0
-        for index in 0..<count {
-            let extraBit = index < remainder ? 1 : 0
-            let bitCount = base + extraBit
-            segments.append(HashSegment(index: index, startBit: currentStart, bitCount: bitCount))
-            currentStart += bitCount
-        }
-
-        return segments
-    }
-
-    private func extractSegmentValue(from hashValue: UInt64, segment: HashSegment) -> UInt64 {
-        if segment.bitCount == 64 {
-            return hashValue
-        }
-
-        let mask = (UInt64(1) << UInt64(segment.bitCount)) - 1
-        return (hashValue >> UInt64(segment.startBit)) & mask
-    }
-
-    // MARK: - Helper Functions
-
-    func getSimilarityDescription(_ score: Double) -> String {
-        switch score {
-        case 0.95...:
-            return L10n.t("similarity.almost_identical")
-        case 0.85..<0.95:
-            return L10n.t("similarity.very_similar")
-        case 0.75..<0.85:
-            return L10n.t("similarity.similar")
-        case 0.65..<0.75:
-            return L10n.t("similarity.slightly_similar")
-        default:
-            return L10n.t("similarity.less_similar")
-        }
-    }
-
-    func getTotalSimilarPhotosCount() -> Int {
-        return similarGroups.reduce(0) { $0 + $1.count }
-    }
-
-    func getTotalDuplicatesCount() -> Int {
-        return duplicateGroups.reduce(0) { $0 + $1.count }
-    }
-
-    func getTotalScreenshotsCount() -> Int {
-        return screenshotGroups.reduce(0) { $0 + $1.count }
-    }
-
-    func getAllGroups() -> [SimilarPhotoGroup] {
-        return duplicateGroups + screenshotGroups + similarGroups
-    }
-
-    func getTotalQualityIssuesCount() -> Int {
-        return blurryPhotos.count + darkPhotos.count + brightPhotos.count
-    }
-
-    func getTotalVideosCount() -> Int {
-        return videos.count
-    }
-
-    func getTotalLivePhotosCount() -> Int {
-        return livePhotos.count
+        similarGroups = prune(similarGroups)
+        duplicateGroups = prune(duplicateGroups)
+        screenshotGroups = prune(screenshotGroups)
+        blurryPhotos.removeAll { ids.contains($0.id) }
+        darkPhotos.removeAll { ids.contains($0.id) }
+        brightPhotos.removeAll { ids.contains($0.id) }
+        videos.removeAll { ids.contains($0.id) }
+        livePhotos.removeAll { ids.contains($0.id) }
+        recalculateSavings()
     }
 
     // Fotoğrafları kalite sorunları listelerinden kaldır
@@ -652,61 +260,46 @@ class SimilarityManager: ObservableObject {
         brightPhotos.removeAll { photoIds.contains($0.id) }
     }
 
-    func getPotentialSpaceSavings() -> Int64 {
-        var totalSize: Int64 = 0
+    // MARK: - Helper Functions
 
-        for group in similarGroups {
-            // Her gruptan en iyi kaliteyi tutup diğerlerini sil
-            let photosToDelete = group.photos.dropFirst()
-            for photo in photosToDelete {
-                if let fileSize = photo.fileSize {
-                    totalSize += fileSize
-                } else {
-                    // Fallback: JPEG sıkıştırma oranı ~1/10 olarak tahmin et
-                    let estimatedSize = Int64(photo.pixelWidth * photo.pixelHeight) / 5
-                    totalSize += estimatedSize
-                }
-            }
-        }
-
-        return totalSize
+    func getTotalSimilarPhotosCount() -> Int {
+        similarGroups.reduce(0) { $0 + $1.count }
     }
 
-    private struct LocationCell: Hashable {
-        let x: Int
-        let y: Int
+    func getTotalDuplicatesCount() -> Int {
+        duplicateGroups.reduce(0) { $0 + $1.count }
     }
 
-    private struct MetadataIndexes {
-        let dateBuckets: [Int: [Int]]
-        let locationBuckets: [LocationCell: [Int]]
-        let dateBucketSize: TimeInterval
-        let locationCellSize: Double
+    func getTotalScreenshotsCount() -> Int {
+        screenshotGroups.reduce(0) { $0 + $1.count }
     }
 
-    private struct HashSegment {
-        let index: Int
-        let startBit: Int
-        let bitCount: Int
+    func getAllGroups() -> [SimilarPhotoGroup] {
+        duplicateGroups + screenshotGroups + similarGroups
     }
 
-    private struct PHashBucketKey: Hashable {
-        let segmentIndex: Int
-        let value: UInt64
+    /// Kalite sorunu olan farklı fotoğraf sayısı (hem bulanık hem karanlık olan bir fotoğraf bir kez sayılır)
+    func getTotalQualityIssuesCount() -> Int {
+        Set((blurryPhotos + darkPhotos + brightPhotos).map(\.id)).count
     }
 
-    private struct PhotoPair: Hashable {
-        let first: Int
-        let second: Int
+    /// Her gruptan en iyi fotoğraf tutulduğunda silinebilecek fotoğraf sayısı
+    func getCleanablePhotosCount() -> Int {
+        getAllGroups().reduce(0) { $0 + max(0, $1.count - 1) }
+    }
 
-        init(first: Int, second: Int) {
-            if first < second {
-                self.first = first
-                self.second = second
-            } else {
-                self.first = second
-                self.second = first
-            }
+    func getTotalVideosCount() -> Int {
+        videos.count
+    }
+
+    func getTotalLivePhotosCount() -> Int {
+        livePhotos.count
+    }
+
+    private func recalculateSavings() {
+        // Her gruptan en iyi fotoğrafı (ilk sıradaki) tutup diğerlerini silmeyi varsay.
+        potentialSavings = getAllGroups().reduce(Int64(0)) { total, group in
+            total + group.photos.dropFirst().reduce(Int64(0)) { $0 + $1.estimatedFileSize }
         }
     }
 }

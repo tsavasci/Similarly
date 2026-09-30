@@ -12,6 +12,7 @@
 "common.error" = "Error";
 "common.favorite" = "Favorite";
 "common.generic_error" = "An error occurred";
+"common.loading_count" = "Loading %lld more...";
 "common.media_files_count" = "%lld media files";
 "common.next" = "Next";
 "common.ok" = "OK";
@@ -43,6 +44,8 @@
 "log.photo.stats_to_process" = "New photos to process: %lld";
 "log.photo.stats_up_to_date" = "All photos are up to date";
 "log.photo.stats_videos" = "Videos: %lld";
+"log.photo.cleanup_deleted" = "Database cleanup: Removed %lld orphaned photo records";
+"log.photo.cleanup_failed" = "Database cleanup failed: %@";
 "log.similarity.blurry_found" = "Blurry photos found: %lld";
 "log.similarity.bright_found" = "Overexposed photos found: %lld";
 "log.similarity.candidates_found" = "Candidate groups found: %lld";
@@ -77,7 +80,7 @@
 "media.videos_count" = "%lld videos";
 "onboarding.page1.desc" = "Automatically detect similar and duplicate photos in your library with smart algorithms.";
 "onboarding.page1.title" = "Find Similar Photos";
-"onboarding.page2.desc" = "Detect similarity with up to 95% accuracy using perceptual hash and histogram analysis.";
+"onboarding.page2.desc" = "Detect similar photos with Apple's on-device Vision image analysis.";
 "onboarding.page2.title" = "Advanced Analysis";
 "onboarding.page3.desc" = "Preview and confirm before deleting. All processing stays safely on your device.";
 "onboarding.page3.title" = "Easy and Safe";
@@ -87,8 +90,8 @@
 "photos.alert.delete_title" = "Delete Photos";
 "quality.empty.title" = "Great!";
 "quality.header.title" = "Photos with Quality Issues";
-"quality.mark.good" = "Good";
-"quality.mark.sharp" = "Sharp";
+"quality.mark.good" = "Mark as OK";
+"quality.mark.sharp" = "Mark as OK";
 "quality.nav_title" = "Quality Issues";
 "quality.tab.blurry" = "Blurry (%lld)";
 "quality.tab.bright" = "Bright (%lld)";
@@ -151,13 +154,15 @@
 "similar.detail.select_to_delete" = "Select photos you want to delete";
 "similar.empty.message" = "No similar photos found.\nYour photo library looks clean.";
 "similar.empty.title" = "Great!";
+"similar.analysis_failed.title" = "Analysis Unavailable";
+"similar.analysis_failed.message" = "Your photos couldn't be analyzed on this device.\nPlease try again later.";
 "similar.media.live_cta" = "View and manage Live Photos";
 "similar.media.videos_cta" = "View and manage videos";
 "similar.nav_title" = "Similar Photos";
 "similar.quality.desc" = "Blurry, dark, or overexposed photos";
 "similar.row.screenshot_count" = "%lld screenshots";
 "similar.row.similar_photo_count" = "%lld similar photos";
-"similar.section.duplicates" = "Duplicate Photos (100% Same)";
+"similar.section.duplicates" = "Duplicate Photos";
 "similar.section.screenshots" = "Screenshots";
 "similar.section.similar_groups" = "Similar Photo Groups";
 "similar.summary.duplicate_groups" = "%lld duplicate groups";
@@ -171,3 +176,5 @@
 "similarity.similar" = "Similar";
 "similarity.slightly_similar" = "Slightly similar";
 "similarity.very_similar" = "Very similar";
+"similar.row.duplicate_count" = "%lld duplicates";
+"comparison.blurry_label" = "Blurry";

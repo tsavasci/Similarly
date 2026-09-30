@@ -19,6 +19,7 @@ struct MainView: View {
     @State private var showingSimilarPhotos = false
     @State private var showingSettings = false
     @State private var showingError = false
+    @State private var analysisTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -55,25 +56,28 @@ struct MainView: View {
                             StatCard(
                                 icon: "photo.on.rectangle.angled",
                                 title: L10n.t("main.stats.total_photos"),
-                                value: "\(photoManager.photos.count)",
+                                value: L10n.number(photoManager.photos.count),
                                 color: .blue
                             )
 
-                            if !similarityManager.similarGroups.isEmpty {
+                            let totalGroups = similarityManager.similarGroups.count
+                                + similarityManager.duplicateGroups.count
+                                + similarityManager.screenshotGroups.count
+                            if totalGroups > 0 {
                                 StatCard(
                                     icon: "square.on.square",
                                     title: L10n.t("main.stats.similar_groups"),
-                                    value: "\(similarityManager.similarGroups.count)",
+                                    value: L10n.number(totalGroups),
                                     color: .purple
                                 )
 
                                 StatCard(
                                     icon: "trash.circle.fill",
                                     title: L10n.t("main.stats.cleanable"),
-                                    value:
-                                        L10n.f(
-                                            "common.photos_count",
-                                            similarityManager.getTotalSimilarPhotosCount()),
+                                    value: L10n.f(
+                                        "common.photos_count",
+                                        similarityManager.getCleanablePhotosCount()
+                                    ),
                                     color: .orange
                                 )
                             }
@@ -107,10 +111,15 @@ struct MainView: View {
                         } else {
                             // Analiz butonu
                             Button(action: {
-                                Task {
+                                analysisTask = Task {
                                     await similarityManager.findSimilarPhotos(
-                                        from: photoManager.photos)
-                                    showingSimilarPhotos = true
+                                        from: photoManager.photos,
+                                        featurePrints: photoManager.featurePrints
+                                    )
+                                    if !Task.isCancelled {
+                                        showingSimilarPhotos = true
+                                    }
+                                    analysisTask = nil
                                 }
                             }) {
                                 HStack {
@@ -167,7 +176,11 @@ struct MainView: View {
                 if similarityManager.isAnalyzing {
                     ProcessingOverlay(
                         title: L10n.t("main.processing.similarity"),
-                        progress: similarityManager.analysisProgress
+                        progress: similarityManager.analysisProgress,
+                        onCancel: {
+                            // Motor iptali algılayıp isAnalyzing'i kendisi kapatır.
+                            analysisTask?.cancel()
+                        }
                     )
                 }
             }
@@ -204,6 +217,10 @@ struct MainView: View {
                 }
                 // ModelContext'i PhotoLibraryManager'a set et
                 photoManager.modelContext = modelContext
+                // Silinen fotoğrafları yeniden analiz yapmadan sonuç listelerinden çıkar.
+                photoManager.onPhotosRemoved = { ids in
+                    similarityManager.removePhotos(ids: ids)
+                }
             }
             .onChange(of: photoManager.errorMessage) { _, newMessage in
                 showingError = (newMessage != nil)
@@ -247,6 +264,7 @@ struct StatCard: View {
 struct ProcessingOverlay: View {
     let title: String
     let progress: Double
+    var onCancel: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -267,9 +285,21 @@ struct ProcessingOverlay: View {
                     .tint(.white)
                     .frame(width: 200)
 
-                Text("\(Int(progress * 100))%")
+                Text(L10n.percent(progress))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
+
+                if let onCancel {
+                    Button(action: onCancel) {
+                        Text(L10n.t("common.cancel"))
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(8)
+                    }
+                }
             }
             .padding(30)
             .background(Color.black.opacity(0.8))

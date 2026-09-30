@@ -5,12 +5,12 @@
 //  Created by AI Agent
 //
 
-import CoreImage
 import CoreLocation
 import Foundation
 import Photos
 
-/// Fotoğraf bilgilerini ve benzerlik analizi için gerekli verileri tutan model
+/// Fotoğraf bilgilerini ve analiz sonuçlarını tutan model.
+/// Feature print vektörleri bellek tasarrufu için burada değil, `PhotoLibraryManager.featurePrints` içinde tutulur.
 struct PhotoItem: Identifiable, Hashable {
     let id: String
     let asset: PHAsset
@@ -23,94 +23,83 @@ struct PhotoItem: Identifiable, Hashable {
     let pixelHeight: Int
     let isFavorite: Bool
     let mediaSubtypes: PHAssetMediaSubtype
-    var thumbnail: CIImage?
-    var pHash: String?
-    var histogram: [CGFloat]?
     var blurScore: Double?
     var brightnessScore: Double?
     var cachedFileSize: Int64?
+    /// Güncel analiz sürümüyle başarıyla analiz edildiyse true
+    var hasAnalysis: Bool
+    /// Kullanıcı "kalite sorunu yok" olarak işaretlediyse true
+    var qualityDismissed: Bool
 
     var isScreenshot: Bool {
-        if #available(iOS 9.0, *) {
-            return mediaSubtypes.contains(.photoScreenshot)
-        }
-        return false
+        mediaSubtypes.contains(.photoScreenshot)
     }
 
     var isLivePhoto: Bool {
-        if #available(iOS 9.1, *) {
-            return mediaSubtypes.contains(.photoLive)
-        }
-        return false
+        mediaSubtypes.contains(.photoLive)
     }
 
     var fileSize: Int64? {
-        // Sadece cache'lenmiş değeri dön (veritabanından gelen değer)
-        return cachedFileSize
+        cachedFileSize
+    }
+
+    /// Dosya boyutu bilinmiyorsa piksel sayısından tahmin eder (HEIC/JPEG ≈ piksel başına 0.2 bayt).
+    var estimatedFileSize: Int64 {
+        fileSize ?? Int64(pixelWidth * pixelHeight) / 5
     }
 
     var isBlurry: Bool {
-        if let blurScore = blurScore {
-            let finalThreshold = UserDefaults.standard.doubleValue(
-                forKey: "blurThreshold",
-                default: AppDefaults.blurThreshold
-            )
-            return blurScore < finalThreshold
-        }
-        return false
+        guard let blurScore else { return false }
+        return blurScore <= UserDefaults.standard.doubleValue(
+            forKey: "blurThreshold",
+            default: AppDefaults.blurThreshold
+        )
     }
 
     var isTooDark: Bool {
-        if let brightnessScore = brightnessScore {
-            let finalThreshold = UserDefaults.standard.doubleValue(
-                forKey: "darknessThreshold",
-                default: AppDefaults.darknessThreshold
-            )
-            return brightnessScore < finalThreshold
-        }
-        return false
+        guard let brightnessScore else { return false }
+        return brightnessScore <= UserDefaults.standard.doubleValue(
+            forKey: "darknessThreshold",
+            default: AppDefaults.darknessThreshold
+        )
     }
 
     var isTooBright: Bool {
-        if let brightnessScore = brightnessScore {
-            let finalThreshold = UserDefaults.standard.doubleValue(
-                forKey: "brightnessThreshold",
-                default: AppDefaults.brightnessThreshold
-            )
-            return brightnessScore > finalThreshold
-        }
-        return false
+        guard let brightnessScore else { return false }
+        return brightnessScore >= UserDefaults.standard.doubleValue(
+            forKey: "brightnessThreshold",
+            default: AppDefaults.brightnessThreshold
+        )
     }
 
     var hasQualityIssues: Bool {
-        return isBlurry || isTooDark || isTooBright
+        isBlurry || isTooDark || isTooBright
     }
 
     init(
-        id: String, asset: PHAsset, thumbnail: CIImage? = nil, pHash: String? = nil,
-        histogram: [CGFloat]? = nil, blurScore: Double? = nil, brightnessScore: Double? = nil,
-        cachedFileSize: Int64? = nil, creationDate: Date? = nil, modificationDate: Date? = nil,
-        location: CLLocation? = nil, mediaType: PHAssetMediaType? = nil, duration: TimeInterval? = nil,
-        pixelWidth: Int? = nil, pixelHeight: Int? = nil, isFavorite: Bool? = nil,
-        mediaSubtypes: PHAssetMediaSubtype? = nil
+        asset: PHAsset,
+        blurScore: Double? = nil,
+        brightnessScore: Double? = nil,
+        cachedFileSize: Int64? = nil,
+        hasAnalysis: Bool = false,
+        qualityDismissed: Bool = false
     ) {
-        self.id = id
+        self.id = asset.localIdentifier
         self.asset = asset
-        self.creationDate = creationDate ?? asset.creationDate
-        self.modificationDate = modificationDate ?? asset.modificationDate
-        self.location = location ?? asset.location
-        self.mediaType = mediaType ?? asset.mediaType
-        self.duration = duration ?? asset.duration
-        self.pixelWidth = pixelWidth ?? asset.pixelWidth
-        self.pixelHeight = pixelHeight ?? asset.pixelHeight
-        self.isFavorite = isFavorite ?? asset.isFavorite
-        self.mediaSubtypes = mediaSubtypes ?? asset.mediaSubtypes
-        self.thumbnail = thumbnail
-        self.pHash = pHash
-        self.histogram = histogram
+        self.creationDate = asset.creationDate
+        self.modificationDate = asset.modificationDate
+        self.location = asset.location
+        self.mediaType = asset.mediaType
+        self.duration = asset.duration
+        self.pixelWidth = asset.pixelWidth
+        self.pixelHeight = asset.pixelHeight
+        self.isFavorite = asset.isFavorite
+        self.mediaSubtypes = asset.mediaSubtypes
         self.blurScore = blurScore
         self.brightnessScore = brightnessScore
         self.cachedFileSize = cachedFileSize
+        self.hasAnalysis = hasAnalysis
+        self.qualityDismissed = qualityDismissed
     }
 
     // Hashable conformance
@@ -128,11 +117,14 @@ struct SimilarPhotoGroup: Identifiable, Hashable {
     let id: UUID
     var photos: [PhotoItem]
     var similarityScore: Double
+    /// Gruptaki fotoğraflar birbirinin neredeyse birebir kopyasıysa true
+    var isDuplicate: Bool
 
-    init(id: UUID = UUID(), photos: [PhotoItem], similarityScore: Double) {
+    init(id: UUID = UUID(), photos: [PhotoItem], similarityScore: Double, isDuplicate: Bool = false) {
         self.id = id
         self.photos = photos
         self.similarityScore = similarityScore
+        self.isDuplicate = isDuplicate
     }
 
     var count: Int {
@@ -149,10 +141,6 @@ struct SimilarPhotoGroup: Identifiable, Hashable {
 
     var favoritePhoto: PhotoItem? {
         photos.first { $0.isFavorite }
-    }
-
-    var isDuplicate: Bool {
-        similarityScore >= 0.99
     }
 
     var allScreenshots: Bool {

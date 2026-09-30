@@ -5,65 +5,9 @@
 //  Created by AI Agent
 //
 
-import Combine
 import Photos
 import SwiftUI
 import UIKit
-
-fileprivate final class MediaAssetImageLoader: ObservableObject {
-    @Published var image: UIImage?
-
-    private let manager = PHCachingImageManager()
-    private static let cache: NSCache<NSString, UIImage> = {
-        let c = NSCache<NSString, UIImage>()
-        c.totalCostLimit = 100 * 1024 * 1024
-        return c
-    }()
-
-    func load(asset: PHAsset, targetSize: CGSize, contentMode: PHImageContentMode = .aspectFill) {
-        guard asset.pixelWidth > 0, asset.pixelHeight > 0 else { return }
-
-        // Validate targetSize - avoid loading with 0 dimension
-        let validSize: CGSize
-        if targetSize.width <= 0 || targetSize.height <= 0 {
-            // Fallback to default size if invalid
-            validSize = CGSize(width: 300, height: 300)
-        } else {
-            validSize = CGSize(
-                width: max(1, targetSize.width.rounded(.up)),
-                height: max(1, targetSize.height.rounded(.up))
-            )
-        }
-        
-        let key = cacheKey(for: asset, targetSize: validSize, contentMode: contentMode)
-        if let cached = Self.cache.object(forKey: key) {
-            if self.image !== cached { self.image = cached }
-            return
-        }
-
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .fastFormat
-        options.resizeMode = .fast
-        options.isNetworkAccessAllowed = true
-
-        manager.requestImage(
-            for: asset,
-            targetSize: validSize,
-            contentMode: contentMode,
-            options: options
-        ) { [weak self] img, _ in
-            guard let self = self, let img = img else { return }
-            let cost = Int(img.size.width * img.size.height)
-            Self.cache.setObject(img, forKey: key, cost: cost)
-            DispatchQueue.main.async { self.image = img }
-        }
-    }
-
-    private func cacheKey(for asset: PHAsset, targetSize: CGSize, contentMode: PHImageContentMode) -> NSString {
-        let sizeKey = "\(Int(targetSize.width))x\(Int(targetSize.height))"
-        return NSString(string: asset.localIdentifier + "_" + sizeKey + "_\(contentMode.rawValue)")
-    }
-}
 
 /// Video ve Live Photos görünümü
 struct MediaLibraryView: View {
@@ -145,17 +89,12 @@ struct MediaLibraryView: View {
             Button(L10n.t("common.delete"), role: .destructive) {
                 Task {
                     do {
-                        try await photoManager.deletePhotos(photosToDelete)
+                        // Silinenler, PhotoLibraryManager.onPhotosRemoved ile listelerden de çıkarılır.
+                        let deleted = try await photoManager.deletePhotos(photosToDelete)
                         photosToDelete = []
 
-                        // Fotoğraf kütüphanesini yeniden yükle
-                        await photoManager.fetchAssets()
-
-                        // Analizi güncelle
-                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
-
                         // Eğer medya kalmadıysa geri dön
-                        if getTotalMediaCount() == 0 {
+                        if deleted && getTotalMediaCount() == 0 {
                             dismiss()
                         }
                     } catch {
@@ -195,29 +134,6 @@ struct MediaPhotoGrid: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(photos) { photo in
-                    MediaPhotoItem(
-                        photo: photo,
-                        mediaType: mediaType,
-                        isSelected: selectedPhotos.contains(photo.id),
-                        onTap: {
-                            if photo.isFavorite {
-                                return
-                            }
-                            if selectedPhotos.contains(photo.id) {
-                                selectedPhotos.remove(photo.id)
-                            } else {
-                                selectedPhotos.insert(photo.id)
-                            }
-                        },
-                        onLongPress: {
-                            showingFullImage = photo
-                        }
-                    )
-                    .frame(minHeight: 100)
-                }
-            }
             if photos.isEmpty {
                 // Boş durum
                 VStack(spacing: 20) {
@@ -320,6 +236,9 @@ struct MediaPhotoGrid: View {
                                         ? L10n.k("common.clear_all") : L10n.k("common.select_all")
                                 )
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.gray.opacity(0.2))
@@ -336,6 +255,9 @@ struct MediaPhotoGrid: View {
                                 Text(L10n.f("common.delete_with_count", selectedPhotos.count))
                                     .fontWeight(.semibold)
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
@@ -365,94 +287,70 @@ struct MediaPhotoItem: View {
     let onTap: () -> Void
     let onLongPress: () -> Void
 
-    @StateObject private var loader = MediaAssetImageLoader()
+    @StateObject private var loader = AssetImageLoader()
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(spacing: 4) {
-            ZStack(alignment: .topLeading) {
-                // Background to maintain bounds
-                Color.gray.opacity(0.05)
-                
-                if let image = loader.image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else if let thumbnail = photo.thumbnail, let uiImage = thumbnail.toUIImage() {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            ProgressView()
-                                .frame(minHeight: 44)
-                        )
+            // Sabit kare taban: görsel overlay olarak yerleşip kırpılır, hücre dışına taşmaz.
+            Color.gray.opacity(0.05)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    if let image = loader.image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay(ProgressView())
+                    }
                 }
-
-                // Video/Live Photo badge
-                VStack {
-                    HStack {
-                        Image(systemName: mediaType.icon)
+                .overlay(alignment: .topLeading) {
+                    // Video/Live Photo badge
+                    Image(systemName: mediaType.icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Circle().fill(mediaType.color))
+                        .padding(6)
+                }
+                .overlay(alignment: .bottomLeading) {
+                    // Favori badge
+                    if photo.isFavorite {
+                        Image(systemName: "star.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(.white)
+                            .foregroundColor(.yellow)
+                            .padding(4)
+                            .background(Circle().fill(Color.black.opacity(0.6)))
                             .padding(6)
-                            .background(Circle().fill(mediaType.color))
-                        Spacer()
-                    }
-                    Spacer()
-                }
-                .padding(6)
-
-                // Favori badge
-                if photo.isFavorite {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.yellow)
-                                .padding(4)
-                                .background(Circle().fill(Color.black.opacity(0.6)))
-                            Spacer()
-                        }
-                    }
-                    .padding(6)
-                }
-
-                // Seçim işareti
-                if isSelected {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title3)
-                                .foregroundColor(.blue)
-                                .background(Circle().fill(Color.white))
-                                .padding(6)
-                        }
-                        Spacer()
                     }
                 }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
-                        lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
-                    )
-            )
+                .overlay(alignment: .topTrailing) {
+                    // Seçim işareti
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                            .background(Circle().fill(Color.white))
+                            .padding(6)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
+                            lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
+                        )
+                )
             .onAppear {
                 // DispatchQueue kullanarak daha reliable delay sağla
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak loader] in
-                    guard let loader = loader else { return }
-                    let scale = UIScreen.main.scale
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     // Fixed size: 100x100
                     let baseSize: CGFloat = 100.0
-                    let size = CGSize(width: baseSize * scale, height: baseSize * scale)
+                    let size = CGSize(width: baseSize * displayScale, height: baseSize * displayScale)
                     loader.load(asset: photo.asset, targetSize: size, contentMode: .aspectFill)
                 }
             }
@@ -502,10 +400,7 @@ struct MediaPhotoItem: View {
     }
 
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        L10n.date(date, time: .shortened)
     }
 
     private func formatDuration(_ seconds: Double) -> String {
@@ -519,9 +414,7 @@ struct MediaPhotoItem: View {
     }
 
     private func formatFileSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        L10n.bytes(bytes)
     }
 }
 

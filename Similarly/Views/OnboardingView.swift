@@ -74,8 +74,8 @@ struct OnboardingView: View {
                             .tag(index)
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
+                // Sistem sayfa göstergesi gizli; altta özel nokta göstergesi zaten var.
+                .tabViewStyle(.page(indexDisplayMode: .never))
 
                 Spacer()
 
@@ -102,7 +102,7 @@ struct OnboardingView: View {
                                 }
                             }) {
                                 HStack {
-                                    Image(systemName: "chevron.left")
+                                    Image(systemName: "chevron.backward")
                                     Text(L10n.k("common.back"))
                                 }
                                 .frame(maxWidth: .infinity)
@@ -129,7 +129,7 @@ struct OnboardingView: View {
                                 )
                                     .fontWeight(.semibold)
                                 if currentPage < pages.count - 1 {
-                                    Image(systemName: "chevron.right")
+                                    Image(systemName: "chevron.forward")
                                 } else {
                                     Image(systemName: "arrow.right.circle.fill")
                                 }

@@ -13,26 +13,27 @@ import ImageIO
 struct SimilarPhotosListView: View {
     @ObservedObject var similarityManager: SimilarityManager
     @ObservedObject var photoManager: PhotoLibraryManager
-    @State private var showingDeleteConfirmation = false
-    @State private var photosToDelete: [PhotoItem] = []
-    @Environment(\.dismiss) private var dismiss
+    @State private var visibleDuplicateCount = 50  // Initial visible count for pagination
+    @State private var visibleScreenshotCount = 50
+    @State private var visibleSimilarCount = 50
 
     var body: some View {
         ZStack {
             if similarityManager.similarGroups.isEmpty && similarityManager.duplicateGroups.isEmpty
                 && similarityManager.screenshotGroups.isEmpty
             {
-                // Benzer fotoğraf bulunamadı
+                // Benzer fotoğraf bulunamadı (veya analiz hiç yapılamadı)
+                let analysisUnavailable = similarityManager.isAnalysisUnavailable
                 VStack(spacing: 20) {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: analysisUnavailable ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                         .font(.system(size: 80))
-                        .foregroundColor(.green)
+                        .foregroundColor(analysisUnavailable ? .orange : .green)
 
-                    Text(L10n.k("similar.empty.title"))
+                    Text(L10n.k(analysisUnavailable ? "similar.analysis_failed.title" : "similar.empty.title"))
                         .font(.title)
                         .fontWeight(.bold)
 
-                    Text(L10n.k("similar.empty.message"))
+                    Text(L10n.k(analysisUnavailable ? "similar.analysis_failed.message" : "similar.empty.message"))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.secondary)
                 }
@@ -47,6 +48,7 @@ struct SimilarPhotosListView: View {
                             if !similarityManager.duplicateGroups.isEmpty {
                                 HStack {
                                     Image(systemName: "doc.on.doc.fill")
+                                        .accessibilityHidden(true)
                                         .foregroundColor(.red)
                                     Text(L10n.f("similar.summary.duplicate_groups", similarityManager.duplicateGroups.count))
                                         .font(.headline)
@@ -57,6 +59,7 @@ struct SimilarPhotosListView: View {
                             if !similarityManager.screenshotGroups.isEmpty {
                                 HStack {
                                     Image(systemName: "camera.viewfinder")
+                                        .accessibilityHidden(true)
                                         .foregroundColor(.orange)
                                     Text(
                                         L10n.f("similar.summary.screenshot_groups", similarityManager.screenshotGroups.count)
@@ -69,6 +72,7 @@ struct SimilarPhotosListView: View {
                             if !similarityManager.similarGroups.isEmpty {
                                 HStack {
                                     Image(systemName: "square.stack.3d.up.fill")
+                                        .accessibilityHidden(true)
                                         .foregroundColor(.blue)
                                     Text(L10n.f("similar.summary.similar_groups", similarityManager.similarGroups.count))
                                         .font(.headline)
@@ -85,18 +89,20 @@ struct SimilarPhotosListView: View {
 
                             HStack {
                                 Image(systemName: "photo.stack")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.purple)
                                 Text(L10n.f("similar.summary.total_photos", totalPhotos))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
 
-                            if similarityManager.getPotentialSpaceSavings() > 0 {
+                            if similarityManager.potentialSavings > 0 {
                                 HStack {
                                     Image(systemName: "internaldrive")
+                                        .accessibilityHidden(true)
                                         .foregroundColor(.green)
                                     Text(
-                                        L10n.f("similar.summary.savings", formatBytes(similarityManager.getPotentialSpaceSavings()))
+                                        L10n.f("similar.summary.savings", formatBytes(similarityManager.potentialSavings))
                                     )
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -113,6 +119,7 @@ struct SimilarPhotosListView: View {
                         Section(
                             header: HStack {
                                 Image(systemName: "video.fill")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.blue)
                                 Text(L10n.k("media.header.title"))
                                     .foregroundColor(.blue)
@@ -128,6 +135,7 @@ struct SimilarPhotosListView: View {
                                     if similarityManager.getTotalVideosCount() > 0 {
                                         HStack {
                                             Image(systemName: "video.fill")
+                                                .accessibilityHidden(true)
                                                 .foregroundColor(.blue)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
@@ -146,6 +154,7 @@ struct SimilarPhotosListView: View {
                                     if similarityManager.getTotalLivePhotosCount() > 0 {
                                         HStack {
                                             Image(systemName: "livephoto")
+                                                .accessibilityHidden(true)
                                                 .foregroundColor(.purple)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
@@ -170,6 +179,7 @@ struct SimilarPhotosListView: View {
                         Section(
                             header: HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.orange)
                                 Text(L10n.k("quality.nav_title"))
                                     .foregroundColor(.orange)
@@ -187,6 +197,7 @@ struct SimilarPhotosListView: View {
                                             if !similarityManager.blurryPhotos.isEmpty {
                                                 HStack(spacing: 4) {
                                                     Image(systemName: "eye.slash.fill")
+                                                        .accessibilityLabel(L10n.t("quality.type.blurry.title"))
                                                         .font(.caption)
                                                         .foregroundColor(.orange)
                                                     Text("\(similarityManager.blurryPhotos.count)")
@@ -198,6 +209,7 @@ struct SimilarPhotosListView: View {
                                             if !similarityManager.darkPhotos.isEmpty {
                                                 HStack(spacing: 4) {
                                                     Image(systemName: "moon.fill")
+                                                        .accessibilityLabel(L10n.t("quality.type.dark.title"))
                                                         .font(.caption)
                                                         .foregroundColor(.purple)
                                                     Text("\(similarityManager.darkPhotos.count)")
@@ -209,6 +221,7 @@ struct SimilarPhotosListView: View {
                                             if !similarityManager.brightPhotos.isEmpty {
                                                 HStack(spacing: 4) {
                                                     Image(systemName: "sun.max.fill")
+                                                        .accessibilityLabel(L10n.t("quality.type.bright.title"))
                                                         .font(.caption)
                                                         .foregroundColor(.yellow)
                                                     Text("\(similarityManager.brightPhotos.count)")
@@ -235,26 +248,41 @@ struct SimilarPhotosListView: View {
                         Section(
                             header: HStack {
                                 Image(systemName: "doc.on.doc.fill")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.red)
                                 Text(L10n.k("similar.section.duplicates"))
                                     .foregroundColor(.red)
                             }
                         ) {
-                            ForEach(similarityManager.duplicateGroups) { group in
+                            ForEach(Array(similarityManager.duplicateGroups.prefix(visibleDuplicateCount))) { group in
                                 NavigationLink {
                                     SimilarPhotoDetailView(
                                         group: group,
-                                        photoManager: photoManager,
-                                        onDelete: { photos in
-                                            photosToDelete = photos
-                                            showingDeleteConfirmation = true
-                                        }
+                                        photoManager: photoManager
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                                .onAppear {
+                                    if group.id == similarityManager.duplicateGroups.prefix(visibleDuplicateCount).last?.id {
+                                        visibleDuplicateCount += 25
+                                    }
+                                }
+                            }
+                            
+                            // Show "Load More" indicator if there are more groups
+                            if visibleDuplicateCount < similarityManager.duplicateGroups.count {
+                                HStack {
+                                    Spacer()
+                                    Text(L10n.f("common.loading_count", similarityManager.duplicateGroups.count - visibleDuplicateCount))
+                                        .foregroundColor(.secondary)
+                                        .onAppear {
+                                            visibleDuplicateCount = min(visibleDuplicateCount + 25, similarityManager.duplicateGroups.count)
+                                        }
+                                    Spacer()
+                                }
                             }
                         }
                     }
@@ -264,26 +292,40 @@ struct SimilarPhotosListView: View {
                         Section(
                             header: HStack {
                                 Image(systemName: "camera.viewfinder")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.orange)
                                 Text(L10n.k("similar.section.screenshots"))
                                     .foregroundColor(.orange)
                             }
                         ) {
-                            ForEach(similarityManager.screenshotGroups) { group in
+                            ForEach(Array(similarityManager.screenshotGroups.prefix(visibleScreenshotCount))) { group in
                                 NavigationLink {
                                     SimilarPhotoDetailView(
                                         group: group,
-                                        photoManager: photoManager,
-                                        onDelete: { photos in
-                                            photosToDelete = photos
-                                            showingDeleteConfirmation = true
-                                        }
+                                        photoManager: photoManager
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                                .onAppear {
+                                    if group.id == similarityManager.screenshotGroups.prefix(visibleScreenshotCount).last?.id {
+                                        visibleScreenshotCount += 25
+                                    }
+                                }
+                            }
+                            
+                            if visibleScreenshotCount < similarityManager.screenshotGroups.count {
+                                HStack {
+                                    Spacer()
+                                    Text(L10n.f("common.loading_count", similarityManager.screenshotGroups.count - visibleScreenshotCount))
+                                        .foregroundColor(.secondary)
+                                        .onAppear {
+                                            visibleScreenshotCount = min(visibleScreenshotCount + 25, similarityManager.screenshotGroups.count)
+                                        }
+                                    Spacer()
+                                }
                             }
                         }
                     }
@@ -293,26 +335,40 @@ struct SimilarPhotosListView: View {
                         Section(
                             header: HStack {
                                 Image(systemName: "square.stack.3d.up.fill")
+                                    .accessibilityHidden(true)
                                     .foregroundColor(.blue)
                                 Text(L10n.k("similar.section.similar_groups"))
                                     .foregroundColor(.blue)
                             }
                         ) {
-                            ForEach(similarityManager.similarGroups) { group in
+                            ForEach(Array(similarityManager.similarGroups.prefix(visibleSimilarCount))) { group in
                                 NavigationLink {
                                     SimilarPhotoDetailView(
                                         group: group,
-                                        photoManager: photoManager,
-                                        onDelete: { photos in
-                                            photosToDelete = photos
-                                            showingDeleteConfirmation = true
-                                        }
+                                        photoManager: photoManager
                                     )
                                 } label: {
                                     SimilarGroupRow(group: group)
                                 }
                                 .listRowInsets(
                                     EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 16))
+                                .onAppear {
+                                    if group.id == similarityManager.similarGroups.prefix(visibleSimilarCount).last?.id {
+                                        visibleSimilarCount += 25
+                                    }
+                                }
+                            }
+                            
+                            if visibleSimilarCount < similarityManager.similarGroups.count {
+                                HStack {
+                                    Spacer()
+                                    Text(L10n.f("common.loading_count", similarityManager.similarGroups.count - visibleSimilarCount))
+                                        .foregroundColor(.secondary)
+                                        .onAppear {
+                                            visibleSimilarCount = min(visibleSimilarCount + 25, similarityManager.similarGroups.count)
+                                        }
+                                    Spacer()
+                                }
                             }
                         }
                     }
@@ -321,40 +377,57 @@ struct SimilarPhotosListView: View {
         }
         .navigationTitle(L10n.k("similar.nav_title"))
         .navigationBarTitleDisplayMode(.large)
-        .alert(L10n.t("photos.alert.delete_title"), isPresented: $showingDeleteConfirmation) {
-            Button(L10n.t("common.cancel"), role: .cancel) {
-                photosToDelete = []
-            }
-            Button(L10n.t("common.delete"), role: .destructive) {
-                Task {
-                    do {
-                        try await photoManager.deletePhotos(photosToDelete)
-                        photosToDelete = []
-
-                        // Fotoğraf kütüphanesini yeniden yükle
-                        await photoManager.fetchAssets()
-
-                        // Grupları güncelle
-                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
-                    } catch {
-                        photoManager.setError(
-                            L10n.f(
-                                "errors.delete_photos_failed",
-                                error.localizedDescription
-                            )
-                        )
-                    }
-                }
-            }
-        } message: {
-            Text(L10n.f("photos.alert.delete_message", photosToDelete.count))
-        }
     }
 
     private func formatBytes(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        L10n.bytes(bytes)
+    }
+}
+
+// MARK: - Group Row Thumbnail
+private struct GroupRowThumbnail: View {
+    let photo: PhotoItem
+    @StateObject private var loader = AssetImageLoader()
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if let image = loader.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                photo.isFavorite ? Color.yellow : Color.white,
+                                lineWidth: photo.isFavorite ? 4 : 3
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            if photo.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.yellow)
+                    .padding(4)
+                    .background(Circle().fill(Color.black.opacity(0.5)))
+                    .offset(x: 4, y: 4)
+            }
+        }
+        .frame(width: 80, height: 80)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                let size = CGSize(width: 80 * displayScale, height: 80 * displayScale)
+                loader.load(asset: photo.asset, targetSize: size)
+            }
+        }
     }
 }
 
@@ -370,13 +443,9 @@ struct SimilarGroupRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     // İlk satır: Fotoğraf sayısı ve benzerlik
                     HStack(spacing: 4) {
-                        Text(
-                            group.allScreenshots
-                                ? L10n.f("similar.row.screenshot_count", group.count)
-                                : L10n.f("similar.row.similar_photo_count", group.count)
-                        )
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        Text(rowCountText)
+                            .font(.caption)
+                            .fontWeight(.semibold)
 
                         Text("•")
                             .font(.caption2)
@@ -402,10 +471,13 @@ struct SimilarGroupRow: View {
                             }
                         }
                     }
+                    // Uzun çevirilerde ("Neredeyse aynı" vb.) satır bölünmesin; gerekirse hafifçe küçülsün.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                     // İkinci satır: Tarih
                     if let date = group.representativePhoto?.creationDate {
-                        Text(date.formatted(date: .numeric, time: .omitted))
+                        Text(L10n.date(date))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -414,36 +486,7 @@ struct SimilarGroupRow: View {
                 // Önizleme resimleri
                 HStack(spacing: 8) {
                     ForEach(Array(group.photos.prefix(3)), id: \.id) { photo in
-                        if let thumbnail = photo.thumbnail,
-                            let uiImage = thumbnail.toUIImage()
-                        {
-                            ZStack(alignment: .topLeading) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(
-                                                photo.isFavorite ? Color.yellow : Color.white,
-                                                lineWidth: photo.isFavorite ? 4 : 3
-                                            )
-                                    )
-                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-
-                                // Favori badge
-                                if photo.isFavorite {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.yellow)
-                                        .padding(4)
-                                        .background(Circle().fill(Color.black.opacity(0.5)))
-                                        .offset(x: 4, y: 4)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
+                        GroupRowThumbnail(photo: photo)
                     }
                 }
             }
@@ -452,7 +495,7 @@ struct SimilarGroupRow: View {
 
             // Sağ kısım - Benzerlik skoru
             VStack(alignment: .trailing, spacing: 2) {
-                Text("\(Int(group.similarityScore * 100))%")
+                Text(L10n.percent(group.similarityScore))
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(getScoreColor(group.similarityScore))
                     .minimumScaleFactor(0.8)
@@ -466,6 +509,16 @@ struct SimilarGroupRow: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal)
+    }
+
+    /// Kopya gruplarında "benzer" yerine "kopya" de; bölüm başlığıyla çelişmesin.
+    private var rowCountText: String {
+        if group.isDuplicate {
+            return L10n.f("similar.row.duplicate_count", group.count)
+        } else if group.allScreenshots {
+            return L10n.f("similar.row.screenshot_count", group.count)
+        }
+        return L10n.f("similar.row.similar_photo_count", group.count)
     }
 
     private func getSimilarityDescription(_ score: Double) -> String {
@@ -498,9 +551,9 @@ struct SimilarGroupRow: View {
 struct SimilarPhotoDetailView: View {
     let group: SimilarPhotoGroup
     @ObservedObject var photoManager: PhotoLibraryManager
-    let onDelete: ([PhotoItem]) -> Void
 
     @State private var selectedPhotos = Set<String>()
+    @State private var showingDeleteConfirmation = false
     @State private var showingFullImage: PhotoItem?
     @State private var showingComparison = false
     @State private var comparisonStartIndex = 0
@@ -511,7 +564,11 @@ struct SimilarPhotoDetailView: View {
 
             // Üst bilgi
             VStack(spacing: 8) {
-                Text(L10n.f("similar.detail.count", group.count))
+                Text(
+                    group.isDuplicate
+                        ? L10n.f("similar.row.duplicate_count", group.count)
+                        : L10n.f("similar.detail.count", group.count)
+                )
                     .font(.title2)
                     .fontWeight(.bold)
 
@@ -541,8 +598,8 @@ struct SimilarPhotoDetailView: View {
                 let spacing: CGFloat = 12
                 let horizontalPadding: CGFloat = 16
                 let totalHorizontalPadding = horizontalPadding * 2
-                let availableWidth = max(0, geometry.size.width - totalHorizontalPadding - spacing)
-                let cellWidth = floor(availableWidth / 2)
+                let availableWidth = max(100, geometry.size.width - totalHorizontalPadding - spacing)
+                let cellWidth = max(75, floor(availableWidth / 2))
                 let columns = [
                     GridItem(.fixed(cellWidth), spacing: spacing),
                     GridItem(.fixed(cellWidth), spacing: spacing),
@@ -590,6 +647,9 @@ struct SimilarPhotoDetailView: View {
                     Text(L10n.k("comparison.title"))
                         .fontWeight(.semibold)
                 }
+                // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.blue.opacity(0.2))
@@ -618,6 +678,9 @@ struct SimilarPhotoDetailView: View {
                             selectedPhotos.count == nonFavorites.count
                                 ? L10n.k("common.clear_all") : L10n.k("common.select_all"))
                     }
+                    // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.gray.opacity(0.2))
@@ -632,6 +695,9 @@ struct SimilarPhotoDetailView: View {
                         Image(systemName: "clock.arrow.circlepath")
                         Text(L10n.k("common.oldest"))
                     }
+                    // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue.opacity(0.2))
@@ -642,17 +708,16 @@ struct SimilarPhotoDetailView: View {
 
             // Sil butonu
             Button(action: {
-                let photosToDelete = group.photos.filter { selectedPhotos.contains($0.id) }
-                onDelete(photosToDelete)
-                // Seçimleri temizle ve geri dön
-                selectedPhotos.removeAll()
-                dismiss()
+                showingDeleteConfirmation = true
             }) {
                 HStack {
                     Image(systemName: "trash.fill")
                     Text(L10n.f("common.delete_selected_count", selectedPhotos.count))
                         .fontWeight(.semibold)
                 }
+                // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
@@ -664,6 +729,15 @@ struct SimilarPhotoDetailView: View {
         }
         .navigationTitle(L10n.k("similar.detail.nav_title"))
         .navigationBarTitleDisplayMode(.inline)
+        // Onay bu ekranda gösterilir; geri dönüş yalnızca silme başarılı olduktan sonra yapılır.
+        .alert(L10n.t("photos.alert.delete_title"), isPresented: $showingDeleteConfirmation) {
+            Button(L10n.t("common.cancel"), role: .cancel) {}
+            Button(L10n.t("common.delete"), role: .destructive) {
+                deleteSelectedPhotos()
+            }
+        } message: {
+            Text(L10n.f("photos.alert.delete_message", selectedPhotos.count))
+        }
         .fullScreenCover(item: $showingFullImage) { photo in
             FullImageView(photo: photo)
         }
@@ -675,6 +749,23 @@ struct SimilarPhotoDetailView: View {
                     selectedPhotos = Set(selectedItems.map(\.id))
                 }
             )
+        }
+    }
+
+    private func deleteSelectedPhotos() {
+        let photosToDelete = group.photos.filter { selectedPhotos.contains($0.id) }
+        Task {
+            do {
+                // Silinenler, PhotoLibraryManager.onPhotosRemoved ile gruplardan da çıkarılır.
+                if try await photoManager.deletePhotos(photosToDelete) {
+                    selectedPhotos.removeAll()
+                    dismiss()
+                }
+            } catch {
+                photoManager.setError(
+                    L10n.f("errors.delete_photos_failed", error.localizedDescription)
+                )
+            }
         }
     }
 
@@ -705,6 +796,7 @@ struct PhotoGridItem: View {
     let onLongPress: () -> Void
 
     @StateObject private var loader = AssetImageLoader()
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -713,15 +805,7 @@ struct PhotoGridItem: View {
                 Color.gray.opacity(0.05)
                 
                 if let image = loader.image {
-                    // Loader'dan gelen full-res image
                     Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else if let thumbnail = photo.thumbnail,
-                    let uiImage = thumbnail.toUIImage()
-                {
-                    // Memory'de cache'lenmiş thumbnail
-                    Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
@@ -759,7 +843,7 @@ struct PhotoGridItem: View {
                         .padding(8)
                 }
             }
-            .frame(width: cellSize, height: cellSize)
+            .frame(width: max(75, cellSize), height: max(75, cellSize))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -769,14 +853,9 @@ struct PhotoGridItem: View {
                     )
             )
             .onAppear {
-                // Thumbnail cache'de yoksa, loader ile yükle
                 // DispatchQueue kullanarak daha reliable delay sağla
-                guard photo.thumbnail == nil else { return }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak loader] in
-                    guard let loader = loader else { return }
-                    let scale = UIScreen.main.scale
-                    let side = max(1, cellSize * scale)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    let side = max(1, cellSize * displayScale)
                     let size = CGSize(width: side, height: side)
                     loader.load(asset: photo.asset, targetSize: size)
                 }
@@ -785,7 +864,7 @@ struct PhotoGridItem: View {
             // Tarih bilgisi
             HStack {
                 if let date = photo.creationDate {
-                    Text(date, style: .date)
+                    Text(L10n.date(date))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -817,73 +896,63 @@ struct PhotoGridItem: View {
 struct FullImageView: View {
     let photo: PhotoItem
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.displayScale) private var displayScale
     @State private var fullImage: UIImage?
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack(alignment: .topTrailing) {
+                Color.black.ignoresSafeArea()
 
-            if let image = fullImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } else if let thumbnail = photo.thumbnail,
-                let uiImage = thumbnail.toUIImage()
-            {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .overlay(
-                        ProgressView()
-                            .tint(.white)
-                    )
-            }
+                if let image = fullImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
 
-            // Kapat butonu
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.white)
-                    .padding()
+                // Kapat butonu
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.white)
+                        .padding()
+                }
             }
-        }
-        .onAppear {
-            loadFullImage()
+            .task {
+                let maxPixelSize = max(geometry.size.width, geometry.size.height) * displayScale
+                fullImage = await Self.loadImage(for: photo.asset, maxPixelSize: maxPixelSize)
+            }
         }
     }
 
-    private func loadFullImage() {
+    /// Görüntü verisini PhotoKit'ten alır ve ekran boyutuna küçültür (ana thread dışında).
+    private static func loadImage(for asset: PHAsset, maxPixelSize: CGFloat) async -> UIImage? {
+        guard asset.pixelWidth > 0, asset.pixelHeight > 0 else { return nil }
+
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
-        options.resizeMode = .none
         options.isNetworkAccessAllowed = true
         options.version = .current
 
-        guard photo.asset.pixelWidth > 0, photo.asset.pixelHeight > 0 else {
-            return
-        }
-
-        let scale = UIScreen.main.scale
-        let bounds = UIScreen.main.bounds
-        let maxPixelSize = max(bounds.width, bounds.height) * scale
-
-        PHImageManager.default().requestImageDataAndOrientation(
-            for: photo.asset,
-            options: options
-        ) { data, _, _, info in
-            let cancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
-            if cancelled { return }
-            guard let data = data else { return }
-
-            if let image = downsampleImage(from: data, maxPixelSize: maxPixelSize) {
-                DispatchQueue.main.async {
-                    fullImage = image
-                }
+        let data: Data? = await withCheckedContinuation { continuation in
+            PHImageManager.default().requestImageDataAndOrientation(
+                for: asset,
+                options: options
+            ) { @Sendable data, _, _, _ in
+                continuation.resume(returning: data)
             }
         }
+        guard let data else { return nil }
+        return await downsampleImage(from: data, maxPixelSize: max(1, maxPixelSize))
     }
 
-    private func downsampleImage(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
+    @concurrent
+    private static func downsampleImage(from data: Data, maxPixelSize: CGFloat) async -> UIImage? {
         let sourceOptions: [CFString: Any] = [
             kCGImageSourceShouldCache: false
         ]
@@ -898,7 +967,7 @@ struct FullImageView: View {
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(1, Int(maxPixelSize.rounded(.up)))
+            kCGImageSourceThumbnailMaxPixelSize: Int(maxPixelSize.rounded(.up))
         ]
 
         guard

@@ -65,7 +65,8 @@ struct QualityIssuesView: View {
                         photosToDelete = photos
                         showingDeleteConfirmation = true
                     },
-                    similarityManager: similarityManager
+                    similarityManager: similarityManager,
+                    photoManager: photoManager
                 )
                 .tag(0)
 
@@ -77,7 +78,8 @@ struct QualityIssuesView: View {
                         photosToDelete = photos
                         showingDeleteConfirmation = true
                     },
-                    similarityManager: similarityManager
+                    similarityManager: similarityManager,
+                    photoManager: photoManager
                 )
                 .tag(1)
 
@@ -89,7 +91,8 @@ struct QualityIssuesView: View {
                         photosToDelete = photos
                         showingDeleteConfirmation = true
                     },
-                    similarityManager: similarityManager
+                    similarityManager: similarityManager,
+                    photoManager: photoManager
                 )
                 .tag(2)
             }
@@ -104,17 +107,12 @@ struct QualityIssuesView: View {
             Button(L10n.t("common.delete"), role: .destructive) {
                 Task {
                     do {
-                        try await photoManager.deletePhotos(photosToDelete)
+                        // Silinenler, PhotoLibraryManager.onPhotosRemoved ile listelerden de çıkarılır.
+                        let deleted = try await photoManager.deletePhotos(photosToDelete)
                         photosToDelete = []
 
-                        // Fotoğraf kütüphanesini yeniden yükle
-                        await photoManager.fetchAssets()
-
-                        // Analizi güncelle
-                        await similarityManager.findSimilarPhotos(from: photoManager.photos)
-
                         // Eğer kalite sorunu kalmadıysa geri dön
-                        if similarityManager.getTotalQualityIssuesCount() == 0 {
+                        if deleted && similarityManager.getTotalQualityIssuesCount() == 0 {
                             dismiss()
                         }
                     } catch {
@@ -139,6 +137,7 @@ struct QualityPhotoGrid: View {
     let issueType: QualityIssueType
     let onDelete: ([PhotoItem]) -> Void
     @ObservedObject var similarityManager: SimilarityManager
+    @ObservedObject var photoManager: PhotoLibraryManager
 
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
@@ -147,6 +146,9 @@ struct QualityPhotoGrid: View {
         // Haptic feedback
         let notificationFeedback = UINotificationFeedbackGenerator()
         notificationFeedback.notificationOccurred(.success)
+
+        // Kararı kalıcı hale getir; sonraki analizlerde bu fotoğraflar tekrar listelenmez.
+        photoManager.setQualityDismissed(ids: Set(photos.map(\.id)))
 
         // Kalite sorunları listesinden kaldır
         switch issueType {
@@ -259,6 +261,9 @@ struct QualityPhotoGrid: View {
                                         ? L10n.k("common.clear_all") : L10n.k("common.select_all")
                                 )
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.gray.opacity(0.2))
@@ -279,6 +284,9 @@ struct QualityPhotoGrid: View {
                                 Text(issueType.notIssueButtonText)
                                     .fontWeight(.semibold)
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.green)
@@ -297,6 +305,9 @@ struct QualityPhotoGrid: View {
                                 Text(L10n.k("common.delete"))
                                     .fontWeight(.semibold)
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
@@ -326,13 +337,14 @@ struct QualityPhotoItem: View {
     let onTap: () -> Void
     let onLongPress: () -> Void
 
+    @StateObject private var loader = AssetImageLoader()
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
         VStack(spacing: 4) {
             ZStack(alignment: .topTrailing) {
-                if let thumbnail = photo.thumbnail,
-                    let uiImage = thumbnail.toUIImage()
-                {
-                    Image(uiImage: uiImage)
+                if let image = loader.image {
+                    Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 110, height: 110)
@@ -370,16 +382,27 @@ struct QualityPhotoItem: View {
                         .padding(6)
                 }
             }
+            // Karta sabit boyut ver; aksi halde esnek içerik resmin dışına taşan gri bir kutu oluşturuyordu.
+            .frame(width: 110, height: 110)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let baseSize: CGFloat = 110.0
+                    let size = CGSize(width: baseSize * displayScale, height: baseSize * displayScale)
+                    loader.load(asset: photo.asset, targetSize: size, contentMode: .aspectFill)
+                }
+            }
 
-            // Kalite skoru
+            // Çekim tarihi (ham kalite skoru kullanıcıya bir şey ifade etmediği için gösterilmiyor)
             HStack(spacing: 4) {
                 Image(systemName: issueType.icon)
                     .font(.system(size: 8))
                     .foregroundColor(issueType.color)
 
-                Text(issueType.scoreText(for: photo))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                if let date = photo.creationDate {
+                    Text(L10n.date(date))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .overlay(
@@ -459,21 +482,6 @@ enum QualityIssueType {
             return L10n.t("quality.mark.good")
         case .bright:
             return L10n.t("quality.mark.good")
-        }
-    }
-
-    func scoreText(for photo: PhotoItem) -> String {
-        switch self {
-        case .blurry:
-            if let score = photo.blurScore {
-                return String(format: "%.0f", score)
-            }
-            return "-"
-        case .dark, .bright:
-            if let score = photo.brightnessScore {
-                return String(format: "%.1f%%", score * 100)
-            }
-            return "-"
         }
     }
 }

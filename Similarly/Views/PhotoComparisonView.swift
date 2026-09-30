@@ -61,39 +61,49 @@ struct PhotoComparisonView: View {
                 .shadow(color: .black.opacity(0.05), radius: 2, y: 2)
 
                 // Fotoğraf grid'i
-                ScrollView {
-                    LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(minimum: 150), spacing: 12),
-                            GridItem(.flexible(minimum: 150), spacing: 12),
-                        ],
-                        spacing: 12
-                    ) {
-                        ForEach(photos) { photo in
-                            ComparisonPhotoCard(
-                                photo: photo,
-                                isSelected: selectedPhotos.contains(photo.id),
-                                onTap: {
-                                    if photo.isFavorite {
-                                        return
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.flexible(minimum: 150), spacing: 12),
+                                GridItem(.flexible(minimum: 150), spacing: 12),
+                            ],
+                            spacing: 12
+                        ) {
+                            ForEach(photos) { photo in
+                                ComparisonPhotoCard(
+                                    photo: photo,
+                                    isSelected: selectedPhotos.contains(photo.id),
+                                    onTap: {
+                                        if photo.isFavorite {
+                                            return
+                                        }
+                                        if selectedPhotos.contains(photo.id) {
+                                            selectedPhotos.remove(photo.id)
+                                        } else {
+                                            selectedPhotos.insert(photo.id)
+                                        }
+                                    },
+                                    onLongPress: {
+                                        // Haptic feedback
+                                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                        impactFeedback.impactOccurred()
+                                        showingFullImage = photo
                                     }
-                                    if selectedPhotos.contains(photo.id) {
-                                        selectedPhotos.remove(photo.id)
-                                    } else {
-                                        selectedPhotos.insert(photo.id)
-                                    }
-                                },
-                                onLongPress: {
-                                    // Haptic feedback
-                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                                    impactFeedback.impactOccurred()
-                                    showingFullImage = photo
-                                }
-                            )
-                            .frame(minHeight: 150)
+                                )
+                                .id(photo.id)
+                            }
+                        }
+                        .padding()
+                    }
+                    .onAppear {
+                        guard initialIndex > 0, initialIndex < photos.count else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation {
+                                proxy.scrollTo(photos[initialIndex].id, anchor: .top)
+                            }
                         }
                     }
-                    .padding()
                 }
 
                 // Alt kontrol butonu
@@ -133,6 +143,9 @@ struct PhotoComparisonView: View {
                                 )
                                 .fontWeight(.semibold)
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.gray.opacity(0.2))
@@ -149,6 +162,9 @@ struct PhotoComparisonView: View {
                                 Text(L10n.k("common.delete_selected"))
                                     .fontWeight(.semibold)
                             }
+                            // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
@@ -213,80 +229,61 @@ struct ComparisonPhotoCard: View {
     let onLongPress: () -> Void
 
     @StateObject private var loader = AssetImageLoader()
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(spacing: 8) {
-            ZStack(alignment: .topLeading) {
-                // Background to maintain bounds
-                Color.gray.opacity(0.05)
-                
-                if let image = loader.image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else if let thumbnail = photo.thumbnail, let uiImage = thumbnail.toUIImage() {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .overlay(
-                            ProgressView()
-                                .frame(minHeight: 44)
-                        )
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            ProgressView()
-                                .frame(minHeight: 44)
-                        )
+            // Sabit kare taban: fotoğraf overlay olarak yerleşip kırpılır, böylece .fill ile
+            // doğal boyutu kartı dışarı itip komşu hücreye taşamaz.
+            Color.gray.opacity(0.05)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    if let image = loader.image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay(ProgressView())
+                    }
                 }
-
-                // Favori badge
-                if photo.isFavorite {
-                    HStack {
+                .overlay(alignment: .topLeading) {
+                    // Favori badge
+                    if photo.isFavorite {
                         Image(systemName: "star.fill")
                             .font(.system(size: 14))
                             .foregroundColor(.yellow)
                             .padding(6)
                             .background(Circle().fill(Color.black.opacity(0.6)))
-                        Spacer()
-                    }
-                    .padding(8)
-                }
-
-                // Seçim işareti
-                if isSelected {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-                                .background(Circle().fill(Color.white))
-                                .padding(8)
-                        }
-                        Spacer()
+                            .padding(8)
                     }
                 }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
-                        lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
-                    )
-            )
+                .overlay(alignment: .topTrailing) {
+                    // Seçim işareti
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                            .background(Circle().fill(Color.white))
+                            .padding(8)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            photo.isFavorite ? Color.yellow : (isSelected ? Color.blue : Color.clear),
+                            lineWidth: photo.isFavorite ? 3 : (isSelected ? 3 : 0)
+                        )
+                )
             .onAppear {
                 // DispatchQueue kullanarak daha reliable delay sağla
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak loader] in
-                    guard let loader = loader else { return }
-                    let scale = UIScreen.main.scale
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     // Fixed size: 150x150
                     let baseSize: CGFloat = 150.0
-                    let size = CGSize(width: baseSize * scale, height: baseSize * scale)
+                    let size = CGSize(width: baseSize * displayScale, height: baseSize * displayScale)
                     loader.load(asset: photo.asset, targetSize: size)
                 }
             }
@@ -316,17 +313,15 @@ struct ComparisonPhotoCard: View {
                         }
                     }
 
-                    Spacer()
-
-                    // Blur score
-                    if let blurScore = photo.blurScore {
+                    // Bulanıklık uyarısı (ham skor yerine anlaşılır etiket)
+                    if photo.isBlurry {
                         HStack(spacing: 2) {
-                            Image(systemName: "eye")
+                            Image(systemName: "eye.slash")
                                 .font(.system(size: 9))
-                            Text(String(format: "%.0f", blurScore))
+                            Text(L10n.k("comparison.blurry_label"))
                                 .font(.caption2)
                         }
-                        .foregroundColor(blurScore < 100 ? .orange : .green)
+                        .foregroundColor(.orange)
                     }
 
                     // Boyutlar
@@ -335,6 +330,8 @@ struct ComparisonPhotoCard: View {
                             .font(.system(size: 9))
                         Text("\(photo.pixelWidth)×\(photo.pixelHeight)")
                             .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
                 .foregroundColor(.secondary)
@@ -351,16 +348,11 @@ struct ComparisonPhotoCard: View {
     }
 
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        L10n.date(date, time: .shortened)
     }
 
     private func formatFileSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        L10n.bytes(bytes)
     }
 }
 
