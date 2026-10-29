@@ -178,3 +178,11 @@
 "similarity.very_similar" = "非常に類似";
 "similar.row.duplicate_count" = "%lld枚の重複写真";
 "comparison.blurry_label" = "ぼやけ";
+"celebration.title" = "クリーンアップ完了！";
+"celebration.subtitle" = "%lld枚の写真を正常に削除しました";
+"celebration.storage_freed" = "解放された容量";
+"celebration.photos_cleaned" = "削除済み";
+"celebration.share_button" = "成果を共有";
+"celebration.share_message" = "Similarlyを使って%lld枚の不要な写真を削除し、%@の空き容量を確保しました！ 🚀";
+"settings.about.rate_app" = "App Storeで評価";
+"main.stats.potential_savings" = "節約可能な容量";

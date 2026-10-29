@@ -289,6 +289,21 @@ struct SettingsView: View {
 
                 // Hakkında
                 Section {
+                    Button(action: {
+                        ReviewManager.openAppStoreReview()
+                    }) {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(.yellow)
+                            Text(L10n.k("settings.about.rate_app"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
                     HStack {
                         Text(L10n.k("settings.about.version"))
                         Spacer()

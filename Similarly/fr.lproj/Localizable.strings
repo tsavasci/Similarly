@@ -178,3 +178,11 @@
 "similarity.very_similar" = "Très similaires";
 "similar.row.duplicate_count" = "%lld doublons";
 "comparison.blurry_label" = "Floue";
+"celebration.title" = "Nettoyage Terminé !";
+"celebration.subtitle" = "%lld photos ont été supprimées avec succès";
+"celebration.storage_freed" = "Espace Libéré";
+"celebration.photos_cleaned" = "Supprimées";
+"celebration.share_button" = "Partager la Réussite";
+"celebration.share_message" = "Je viens de nettoyer %lld photos inutiles et libéré %@ d'espace avec Similarly ! 🚀";
+"settings.about.rate_app" = "Noter sur l'App Store";
+"main.stats.potential_savings" = "Économies Estimées";

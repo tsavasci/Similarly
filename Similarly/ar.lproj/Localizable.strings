@@ -178,3 +178,11 @@
 "similarity.very_similar" = "متشابه جدًا";
 "similar.row.duplicate_count" = "%lld نسخة مكررة";
 "comparison.blurry_label" = "ضبابية";
+"celebration.title" = "اكتمل التنظيف!";
+"celebration.subtitle" = "تم تنظيف %lld صورة بنجاح";
+"celebration.storage_freed" = "المساحة المحررة";
+"celebration.photos_cleaned" = "المنظفة";
+"celebration.share_button" = "مشاركة الإنجاز";
+"celebration.share_message" = "لقد قمت للتو بتنظيف %lld صورة غير ضرورية واستعدت %@ من مساحة التخزين باستخدام تطبيق Similarly! 🚀";
+"settings.about.rate_app" = "التقييم في App Store";
+"main.stats.potential_savings" = "المساحة الموفرة المقدرة";

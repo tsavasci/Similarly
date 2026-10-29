@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		F208C6912E9D4000000551CD /* SimilarlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimilarlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F208C6412E9D2A3F000551CD /* Similarly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Similarly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +22,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F208C6932E9D4000000551CD /* SimilarlyTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SimilarlyTests;
+			sourceTree = "<group>";
+		};
 		F208C6432E9D2A3F000551CD /* Similarly */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +38,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F208C69E2E9D4000000551CE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F208C63E2E9D2A3F000551CD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				F208C6432E9D2A3F000551CD /* Similarly */,
+				F208C6932E9D4000000551CD /* SimilarlyTests */,
 				F208C6422E9D2A3F000551CD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,13 +68,55 @@
 			isa = PBXGroup;
 			children = (
 				F208C6412E9D2A3F000551CD /* Similarly.app */,
+				F208C6912E9D4000000551CD /* SimilarlyTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
+/* Begin PBXContainerItemProxy section */
+		F208C6942E9D4000000551CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F208C6392E9D2A3F000551CD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F208C6402E9D2A3F000551CD;
+			remoteInfo = Similarly;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		F208C6922E9D4000000551CD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F208C6402E9D2A3F000551CD /* Similarly */;
+			targetProxy = F208C6942E9D4000000551CD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXNativeTarget section */
+		F208C6902E9D4000000551CD /* SimilarlyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F208C69E2E9D4000000551CD /* Build configuration list for PBXNativeTarget "SimilarlyTests" */;
+			buildPhases = (
+				F208C69D2E9D4000000551CD /* Sources */,
+				F208C69E2E9D4000000551CE /* Frameworks */,
+				F208C69F2E9D4000000551CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F208C6922E9D4000000551CD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F208C6932E9D4000000551CD /* SimilarlyTests */,
+			);
+			name = SimilarlyTests;
+			packageProductDependencies = (
+			);
+			productName = SimilarlyTests;
+			productReference = F208C6912E9D4000000551CD /* SimilarlyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		F208C6402E9D2A3F000551CD /* Similarly */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F208C64E2E9D2A3F000551CD /* Build configuration list for PBXNativeTarget "Similarly" */;
@@ -93,6 +149,10 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					F208C6902E9D4000000551CD = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = F208C6402E9D2A3F000551CD;
+					};
 					F208C6402E9D2A3F000551CD = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -120,11 +180,19 @@
 			projectRoot = "";
 			targets = (
 				F208C6402E9D2A3F000551CD /* Similarly */,
+				F208C6902E9D4000000551CD /* SimilarlyTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F208C69F2E9D4000000551CF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F208C63F2E9D2A3F000551CD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -135,6 +203,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F208C69D2E9D4000000551CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F208C63D2E9D2A3F000551CD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -145,6 +220,48 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		F208C69F2E9D4000000551CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.SimilarlyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+								SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Similarly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Similarly";
+			};
+			name = Debug;
+		};
+		F208C6A02E9D4000000551CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T54PTGTNBU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tsavasci.SimilarlyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+								SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Similarly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Similarly";
+			};
+			name = Release;
+		};
 		F208C64C2E9D2A3F000551CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -304,8 +421,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
+								SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -346,8 +462,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
+								SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -357,6 +472,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F208C69E2E9D4000000551CD /* Build configuration list for PBXNativeTarget "SimilarlyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F208C69F2E9D4000000551CD /* Debug */,
+				F208C6A02E9D4000000551CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F208C63C2E9D2A3F000551CD /* Build configuration list for PBXProject "Similarly" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

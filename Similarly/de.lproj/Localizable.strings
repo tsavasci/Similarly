@@ -178,3 +178,11 @@
 "similarity.very_similar" = "Sehr ähnlich";
 "similar.row.duplicate_count" = "%lld Duplikate";
 "comparison.blurry_label" = "Unscharf";
+"celebration.title" = "Bereinigung Abgeschlossen!";
+"celebration.subtitle" = "%lld Fotos erfolgreich bereinigt";
+"celebration.storage_freed" = "Freigegebener Speicher";
+"celebration.photos_cleaned" = "Bereinigt";
+"celebration.share_button" = "Erfolg teilen";
+"celebration.share_message" = "Ich habe mit Similarly %lld unnötige Fotos bereinigt und %@ Speicherplatz freigegeben! 🚀";
+"settings.about.rate_app" = "Im App Store bewerten";
+"main.stats.potential_savings" = "Geschätzte Ersparnis";

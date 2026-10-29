@@ -178,3 +178,11 @@
 "similarity.very_similar" = "Very similar";
 "similar.row.duplicate_count" = "%lld duplicates";
 "comparison.blurry_label" = "Blurry";
+"celebration.title" = "Clean Complete!";
+"celebration.subtitle" = "You cleaned %lld photos successfully";
+"celebration.storage_freed" = "Space Freed";
+"celebration.photos_cleaned" = "Cleaned";
+"celebration.share_button" = "Share Achievement";
+"celebration.share_message" = "I just cleaned %lld unnecessary photos and reclaimed %@ of storage using Similarly! 🚀";
+"settings.about.rate_app" = "Rate on App Store";
+"main.stats.potential_savings" = "Estimated Savings";

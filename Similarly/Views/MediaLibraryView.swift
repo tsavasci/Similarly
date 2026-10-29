@@ -16,6 +16,9 @@ struct MediaLibraryView: View {
     @State private var showingDeleteConfirmation = false
     @State private var photosToDelete: [PhotoItem] = []
     @State private var selectedTab = 0
+    @State private var showingCelebration = false
+    @State private var lastDeletedCount = 0
+    @State private var lastSavedBytes: Int64 = 0
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -87,15 +90,18 @@ struct MediaLibraryView: View {
                 photosToDelete = []
             }
             Button(L10n.t("common.delete"), role: .destructive) {
+                let count = photosToDelete.count
+                let bytes = photosToDelete.reduce(Int64(0)) { $0 + $1.estimatedFileSize }
                 Task {
                     do {
                         // Silinenler, PhotoLibraryManager.onPhotosRemoved ile listelerden de çıkarılır.
                         let deleted = try await photoManager.deletePhotos(photosToDelete)
                         photosToDelete = []
 
-                        // Eğer medya kalmadıysa geri dön
-                        if deleted && getTotalMediaCount() == 0 {
-                            dismiss()
+                        if deleted {
+                            lastDeletedCount = count
+                            lastSavedBytes = bytes
+                            showingCelebration = true
                         }
                     } catch {
                         photoManager.setError(
@@ -109,6 +115,19 @@ struct MediaLibraryView: View {
             }
         } message: {
             Text(L10n.f("media.alert.delete_message", photosToDelete.count))
+        }
+        .sheet(isPresented: $showingCelebration, onDismiss: {
+            if getTotalMediaCount() == 0 {
+                dismiss()
+            }
+        }) {
+            CleanCelebrationView(
+                deletedCount: lastDeletedCount,
+                savedBytes: lastSavedBytes,
+                onDismiss: {
+                    showingCelebration = false
+                }
+            )
         }
     }
 

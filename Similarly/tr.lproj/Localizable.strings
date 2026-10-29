@@ -178,3 +178,11 @@
 "similarity.very_similar" = "Çok benzer";
 "similar.row.duplicate_count" = "%lld kopya";
 "comparison.blurry_label" = "Bulanık";
+"celebration.title" = "Temizlik Tamamlandı!";
+"celebration.subtitle" = "%lld fotoğraf başarıyla temizlendi";
+"celebration.storage_freed" = "Açılan Alan";
+"celebration.photos_cleaned" = "Temizlenen";
+"celebration.share_button" = "Kazancı Paylaş";
+"celebration.share_message" = "Similarly ile %lld gereksiz fotoğrafı temizleyerek %@ depolama alanı kazandım! 🚀";
+"settings.about.rate_app" = "App Store'da Puanla";
+"main.stats.potential_savings" = "Tahmini Tasarruf";

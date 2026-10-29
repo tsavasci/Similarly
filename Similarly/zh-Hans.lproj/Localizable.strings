@@ -178,3 +178,11 @@
 "similarity.very_similar" = "非常相似";
 "similar.row.duplicate_count" = "%lld 张重复照片";
 "comparison.blurry_label" = "模糊";
+"celebration.title" = "清理完成！";
+"celebration.subtitle" = "已成功清理 %lld 张照片";
+"celebration.storage_freed" = "已释放空间";
+"celebration.photos_cleaned" = "已清理";
+"celebration.share_button" = "分享成就";
+"celebration.share_message" = "我刚刚使用 Similarly 清理了 %lld 张不需要的照片，释放了 %@ 存储空间！ 🚀";
+"settings.about.rate_app" = "在 App Store 评分";
+"main.stats.potential_savings" = "预计可节省";

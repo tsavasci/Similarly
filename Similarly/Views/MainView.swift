@@ -80,6 +80,15 @@ struct MainView: View {
                                     ),
                                     color: .orange
                                 )
+
+                                if similarityManager.potentialSavings > 0 {
+                                    StatCard(
+                                        icon: "internaldrive.fill",
+                                        title: L10n.t("main.stats.potential_savings"),
+                                        value: L10n.bytes(similarityManager.potentialSavings),
+                                        color: .green
+                                    )
+                                }
                             }
                         }
                         .padding(.horizontal)

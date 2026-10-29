@@ -372,6 +372,16 @@ final class PhotoLibraryManager: NSObject, ObservableObject, PHPhotoLibraryChang
 
         removeLocally(ids: Set(ids))
         logger.info("Deleted \(ids.count) photos")
+
+        // Silinen fotoğrafların toplam tahmini boyutunu hesapla
+        let totalBytes = items.reduce(Int64(0)) { $0 + $1.estimatedFileSize }
+
+        // ReviewManager & İstatistik güncellemesi
+        ReviewManager.shared.recordSuccessfulClean(
+            deletedPhotosCount: ids.count,
+            savedBytes: totalBytes
+        )
+
         return true
     }
 

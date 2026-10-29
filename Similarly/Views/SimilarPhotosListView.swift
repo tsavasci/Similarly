@@ -557,6 +557,9 @@ struct SimilarPhotoDetailView: View {
     @State private var showingFullImage: PhotoItem?
     @State private var showingComparison = false
     @State private var comparisonStartIndex = 0
+    @State private var showingCelebration = false
+    @State private var lastDeletedCount = 0
+    @State private var lastSavedBytes: Int64 = 0
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -750,16 +753,32 @@ struct SimilarPhotoDetailView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingCelebration, onDismiss: {
+            dismiss()
+        }) {
+            CleanCelebrationView(
+                deletedCount: lastDeletedCount,
+                savedBytes: lastSavedBytes,
+                onDismiss: {
+                    showingCelebration = false
+                }
+            )
+        }
     }
 
     private func deleteSelectedPhotos() {
         let photosToDelete = group.photos.filter { selectedPhotos.contains($0.id) }
+        let count = photosToDelete.count
+        let bytes = photosToDelete.reduce(Int64(0)) { $0 + $1.estimatedFileSize }
+
         Task {
             do {
                 // Silinenler, PhotoLibraryManager.onPhotosRemoved ile gruplardan da çıkarılır.
                 if try await photoManager.deletePhotos(photosToDelete) {
+                    lastDeletedCount = count
+                    lastSavedBytes = bytes
                     selectedPhotos.removeAll()
-                    dismiss()
+                    showingCelebration = true
                 }
             } catch {
                 photoManager.setError(
