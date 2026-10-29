@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Gizlilik Politikası - Similarly</title>
+        <title>Privacy Policy - Similarly</title>
+        <meta name="description" content="Similarly Privacy Policy. Learn how Similarly keeps your personal photos 100% private with on-device Apple Vision intelligence." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -27,15 +28,9 @@
                 --gray-800: #1f2937;
                 --gray-900: #111827;
                 --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                --shadow:
-                    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-                    0 1px 2px 0 rgba(0, 0, 0, 0.06);
-                --shadow-md:
-                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                --shadow-lg:
-                    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-                    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
 
             * {
@@ -45,22 +40,16 @@
             }
 
             body {
-                font-family:
-                    "Inter",
-                    -apple-system,
-                    BlinkMacSystemFont,
-                    "Segoe UI",
-                    Roboto,
-                    sans-serif;
+                font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 line-height: 1.7;
                 color: var(--gray-700);
                 background-color: var(--gray-50);
             }
 
             .container {
-                max-width: 900px;
+                max-width: 860px;
                 margin: 0 auto;
-                padding: 0 2rem;
+                padding: 0 1.5rem;
             }
 
             /* Header */
@@ -74,22 +63,19 @@
             }
 
             nav {
-                max-width: 1280px;
+                max-width: 1100px;
                 margin: 0 auto;
-                padding: 1.25rem 2rem;
+                padding: 1rem 1.5rem;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                gap: 1rem;
             }
 
             .logo {
                 font-size: 1.75rem;
                 font-weight: 800;
-                background: linear-gradient(
-                    135deg,
-                    var(--primary) 0%,
-                    var(--secondary) 100%
-                );
+                background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
@@ -97,567 +83,284 @@
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
-                transition: transform 0.3s ease;
             }
 
-            .logo:hover {
-                transform: scale(1.05);
-            }
-
-            .logo::before {
-                content: "✨";
-                font-size: 1.5rem;
+            .nav-actions {
+                display: flex;
+                align-items: center;
+                gap: 1.25rem;
             }
 
             .back-link {
                 color: var(--primary);
                 text-decoration: none;
-                font-weight: 500;
-                display: inline-flex;
-                align-items: center;
-                gap: 0.5rem;
-                transition: all 0.2s ease;
+                font-weight: 600;
+                font-size: 0.95rem;
             }
 
             .back-link:hover {
-                transform: translateX(-4px);
+                text-decoration: underline;
             }
 
-            .back-link::before {
-                content: "←";
-                font-size: 1.25rem;
-            }
-
-            /* Hero Section */
-            .hero {
-                background: linear-gradient(
-                    135deg,
-                    var(--primary) 0%,
-                    var(--secondary) 100%
-                );
-                color: white;
-                padding: 5rem 0 4rem;
-                text-align: center;
+            .lang-selector-wrapper {
                 position: relative;
-                overflow: hidden;
             }
 
-            .hero::before {
-                content: "";
+            .lang-select {
+                appearance: none;
+                background: var(--gray-100);
+                border: 1px solid var(--gray-200);
+                padding: 0.4rem 1.8rem 0.4rem 0.75rem;
+                border-radius: 0.5rem;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--gray-700);
+                cursor: pointer;
+                outline: none;
+            }
+
+            .lang-selector-wrapper::after {
+                content: "▼";
+                font-size: 0.6rem;
                 position: absolute;
-                top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 150%;
-                height: 100%;
-                background: radial-gradient(
-                    ellipse at center,
-                    rgba(255, 255, 255, 0.1) 0%,
-                    transparent 70%
-                );
+                right: 0.65rem;
+                top: 50%;
+                transform: translateY(-50%);
                 pointer-events: none;
+                color: var(--gray-500);
             }
 
-            .hero-content {
-                position: relative;
-                z-index: 1;
+            [dir="rtl"] .lang-select {
+                padding: 0.4rem 0.75rem 0.4rem 1.8rem;
+            }
+            [dir="rtl"] .lang-selector-wrapper::after {
+                right: auto;
+                left: 0.65rem;
+            }
+
+            /* Hero */
+            .hero {
+                background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+                color: white;
+                padding: 4.5rem 0 3.5rem;
+                text-align: center;
             }
 
             .hero h1 {
-                font-size: 3rem;
+                font-size: 2.75rem;
                 font-weight: 900;
-                margin-bottom: 1rem;
+                margin-bottom: 0.75rem;
             }
 
             .hero p {
-                font-size: 1.25rem;
-                opacity: 0.9;
+                font-size: 1.2rem;
+                opacity: 0.95;
             }
 
             .last-updated {
                 display: inline-block;
-                margin-top: 1.5rem;
-                padding: 0.5rem 1.25rem;
+                margin-top: 1.25rem;
+                padding: 0.4rem 1.2rem;
                 background: rgba(255, 255, 255, 0.2);
                 border-radius: 2rem;
-                font-size: 0.875rem;
+                font-size: 0.85rem;
                 font-weight: 500;
-            }
-
-            /* Language Toggle */
-            .language-toggle {
-                text-align: center;
-                padding: 2rem 0;
-            }
-
-            .language-toggle a {
-                display: inline-block;
-                padding: 0.75rem 1.5rem;
-                background: white;
-                color: var(--primary);
-                text-decoration: none;
-                border-radius: 0.75rem;
-                font-weight: 600;
-                box-shadow: var(--shadow-md);
-                transition: all 0.3s ease;
-            }
-
-            .language-toggle a:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-lg);
             }
 
             /* Content */
             .content {
                 background: white;
                 border-radius: 1.5rem;
-                padding: 4rem;
-                margin: -3rem auto 4rem;
-                position: relative;
+                padding: 3.5rem;
+                margin: -2.5rem auto 4rem;
                 box-shadow: var(--shadow-lg);
-                max-width: 900px;
             }
 
             .content h2 {
                 color: var(--gray-900);
-                font-size: 1.875rem;
+                font-size: 1.6rem;
                 font-weight: 800;
-                margin: 3rem 0 1.5rem;
+                margin: 2.5rem 0 1rem;
                 padding-top: 1.5rem;
-                border-top: 2px solid var(--gray-100);
+                border-top: 1px solid var(--gray-200);
             }
 
             .content h2:first-of-type {
-                margin-top: 0;
+                margin-top: 1rem;
                 padding-top: 0;
                 border-top: none;
-            }
-
-            .content h3 {
-                color: var(--gray-800);
-                font-size: 1.375rem;
-                font-weight: 700;
-                margin: 2rem 0 1rem;
             }
 
             .content p {
                 margin-bottom: 1.25rem;
                 color: var(--gray-600);
                 line-height: 1.8;
-            }
-
-            .content ul,
-            .content ol {
-                margin: 1.5rem 0;
-                padding-left: 2rem;
-            }
-
-            .content li {
-                margin-bottom: 1rem;
-                color: var(--gray-600);
-                line-height: 1.8;
-            }
-
-            .content li strong {
-                color: var(--gray-900);
-                font-weight: 600;
-            }
-
-            .content a {
-                color: var(--primary);
-                text-decoration: none;
-                font-weight: 500;
-                transition: color 0.2s ease;
-            }
-
-            .content a:hover {
-                color: var(--primary-dark);
-                text-decoration: underline;
+                font-size: 1.05rem;
             }
 
             .highlight-box {
-                background: linear-gradient(
-                    135deg,
-                    rgba(59, 130, 246, 0.1) 0%,
-                    rgba(139, 92, 246, 0.1) 100%
-                );
+                background: rgba(59, 130, 246, 0.08);
                 border-left: 4px solid var(--primary);
-                padding: 1.5rem;
+                padding: 1.25rem 1.5rem;
                 border-radius: 0.75rem;
                 margin: 2rem 0;
             }
 
+            [dir="rtl"] .highlight-box {
+                border-left: none;
+                border-right: 4px solid var(--primary);
+            }
+
             .highlight-box p {
                 margin: 0;
-            }
-
-            .icon-list {
-                list-style: none;
-                padding-left: 0;
-            }
-
-            .icon-list li {
-                display: flex;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-
-            .icon-list li::before {
-                content: "✓";
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 1.5rem;
-                height: 1.5rem;
-                background: linear-gradient(
-                    135deg,
-                    var(--primary) 0%,
-                    var(--secondary) 100%
-                );
-                color: white;
-                border-radius: 50%;
-                font-weight: 700;
-                font-size: 0.875rem;
-                flex-shrink: 0;
-                margin-top: 0.125rem;
+                color: var(--gray-800);
+                font-weight: 500;
             }
 
             /* Footer */
             footer {
                 background-color: var(--gray-900);
                 color: white;
-                padding: 3rem 0;
+                padding: 2.5rem 0;
                 text-align: center;
-            }
-
-            .footer-links {
-                display: flex;
-                justify-content: center;
-                gap: 2rem;
-                margin: 1.5rem 0;
-                flex-wrap: wrap;
-            }
-
-            .footer-links a {
-                color: var(--gray-400);
-                text-decoration: none;
-                transition: color 0.2s ease;
-            }
-
-            .footer-links a:hover {
-                color: white;
             }
 
             .copyright {
                 color: var(--gray-500);
                 font-size: 0.875rem;
-                margin-top: 1.5rem;
             }
 
-            /* Responsive */
             @media (max-width: 768px) {
-                .container {
-                    padding: 0 1.5rem;
-                }
-
-                .hero {
-                    padding: 3rem 0 2rem;
-                }
-
-                .hero h1 {
-                    font-size: 2rem;
-                }
-
-                .hero p {
-                    font-size: 1.125rem;
-                }
-
-                .content {
-                    padding: 2rem 1.5rem;
-                    margin: -2rem 1rem 3rem;
-                    border-radius: 1rem;
-                }
-
-                .content h2 {
-                    font-size: 1.5rem;
-                }
-
-                .content h3 {
-                    font-size: 1.25rem;
-                }
-
-                nav {
-                    padding: 1rem 1.5rem;
-                }
-            }
-
-            /* Smooth Scroll */
-            html {
-                scroll-behavior: smooth;
-            }
-
-            /* Selection */
-            ::selection {
-                background-color: var(--primary);
-                color: white;
+                .content { padding: 2rem 1.5rem; }
+                .hero h1 { font-size: 2rem; }
             }
         </style>
     </head>
     <body>
         <header>
             <nav>
-                <a href="index.html" class="logo">Similarly</a>
-                <a href="index.html" class="back-link">Ana Sayfa</a>
+                <a href="index.html" class="logo">✨ Similarly</a>
+                <div class="nav-actions">
+                    <div class="lang-selector-wrapper">
+                        <select id="langSelect" class="lang-select" aria-label="Select Language">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="tr">🇹🇷 Türkçe</option>
+                            <option value="de">🇩🇪 Deutsch</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="ja">🇯🇵 日本語</option>
+                            <option value="zh-Hans">🇨🇳 简体中文</option>
+                            <option value="ar">🇸🇦 العربية</option>
+                        </select>
+                    </div>
+                    <a href="index.html" class="back-link" data-i18n="privacyPage.backHome">Back to Home</a>
+                </div>
             </nav>
         </header>
 
         <section class="hero">
             <div class="container">
-                <div class="hero-content">
-                    <h1>🔒 Gizlilik Politikası</h1>
-                    <p>Gizliliğiniz bizim için önemli</p>
-                    <span class="last-updated"
-                        >Son Güncelleme: 14 Ekim 2025</span
-                    >
-                </div>
+                <h1 data-i18n="privacyPage.title">Privacy Policy</h1>
+                <p data-i18n="privacyPage.subtitle">Your privacy is our highest priority</p>
+                <span class="last-updated" data-i18n="privacyPage.lastUpdated">Last Updated: October 2025</span>
             </div>
         </section>
 
-        <div class="language-toggle">
-            <a href="privacy_en.html">🌍 English Version →</a>
-        </div>
-
         <main class="container">
             <article class="content">
-                <p style="font-size: 1.125rem">
-                    Bu Gizlilik Politikası, Similarly uygulamasının ("Uygulama")
-                    kullanıcılarının gizliliğini korumak için veri işleme
-                    uygulamalarımızı açıklar. Uygulamamızı kullanarak, bu
-                    politikada açıklanan veri toplama ve kullanım uygulamalarını
-                    kabul etmiş olursunuz.
+                <p data-i18n="privacyPage.intro" style="font-size: 1.15rem; font-weight: 500; color: var(--gray-800);">
+                    This Privacy Policy describes our commitment to your privacy when using the Similarly application for iOS. Similarly is built from the ground up as a privacy-first, on-device utility.
                 </p>
 
                 <div class="highlight-box">
-                    <p>
-                        <strong>🛡️ Önemli Not:</strong> Similarly, gizlilik
-                        öncelikli bir uygulamadır. Tüm fotoğraf işlemleri
-                        cihazınızda gerçekleşir ve fotoğraflarınız asla
-                        sunucularımıza gönderilmez.
+                    <p data-i18n="privacyPage.boxHighlight">
+                        🛡️ Core Principle: All image processing, similarity analysis, and categorization take place exclusively on your iPhone. Your photos, videos, and personal data NEVER leave your device.
                     </p>
                 </div>
 
-                <h2>1. Toplanan Bilgiler</h2>
-                <p>
-                    Similarly uygulaması, aşağıdaki türde bilgileri
-                    toplayabilir:
-                </p>
-                <ul class="icon-list">
-                    <li>
-                        <strong>Cihaz Bilgileri:</strong> Cihaz modeli, işletim
-                        sistemi sürümü, benzersiz cihaz tanımlayıcıları ve çökme
-                        verileri gibi teknik bilgiler.
-                    </li>
-                    <li>
-                        <strong>Kullanım Verileri:</strong> Uygulama içi
-                        etkileşimleriniz, özellik kullanımlarınız ve
-                        tercihleriniz.
-                    </li>
-                    <li>
-                        <strong>Fotoğraflar:</strong> Sadece sizin açık
-                        izninizle ve sadece benzerlik analizi yapmak amacıyla
-                        cihazınızdaki fotoğraflara erişebiliriz.
-                    </li>
-                </ul>
-
-                <h2>2. Veri Kullanımı</h2>
-                <p>
-                    Topladığımız bilgileri aşağıdaki amaçlarla kullanabiliriz:
-                </p>
-                <ul>
-                    <li>Uygulamanın temel işlevselliğini sağlamak</li>
-                    <li>Kullanıcı deneyimini iyileştirmek</li>
-                    <li>
-                        Uygulama performansını analiz etmek ve hataları gidermek
-                    </li>
-                    <li>Yeni özellikler geliştirmek</li>
-                    <li>Teknik destek sağlamak</li>
-                    <li>Yasal yükümlülüklerimizi yerine getirmek</li>
-                </ul>
-
-                <h2>3. Veri Güvenliği</h2>
-                <p>Verilerinizin güvenliği bizim için en yüksek önceliktir:</p>
-                <ul class="icon-list">
-                    <li>
-                        <strong>Yerel İşleme:</strong> Tüm veri işlemleri sadece
-                        cihazınızda gerçekleşir.
-                    </li>
-                    <li>
-                        <strong>Sunucu Yok:</strong> Fotoğraflarınız ve kişisel
-                        verileriniz asla sunucularımıza gönderilmez veya üçüncü
-                        taraflarla paylaşılmaz.
-                    </li>
-                    <li>
-                        <strong>Cihazda Kalır:</strong> Uygulama,
-                        fotoğraflarınızı işlemek için sadece cihazınızın işlem
-                        gücünü kullanır.
-                    </li>
-                    <li>
-                        <strong>Şifreleme:</strong> Tüm hassas veriler şifreli
-                        olarak saklanır.
-                    </li>
-                </ul>
-
-                <div class="highlight-box">
-                    <p>
-                        <strong>💡 Güvenlik Taahhüdü:</strong> Similarly,
-                        fotoğraflarınıza sadece benzerlik analizi için erişir ve
-                        bu verileri asla dışarıya göndermez. Tüm işlemler %100
-                        yerel olarak gerçekleşir.
-                    </p>
-                </div>
-
-                <h2>4. Üçüncü Taraf Hizmetleri</h2>
-                <p>
-                    Uygulamamız, hizmet kalitemizi artırmak için aşağıdaki
-                    üçüncü taraf hizmetlerini kullanabilir:
-                </p>
-                <ul>
-                    <li>
-                        <strong>Çökme Raporlama:</strong> Uygulama çökmelerini
-                        tespit etmek ve düzeltmek için kullanılır. Sadece teknik
-                        veriler toplanır, fotoğraflarınız dahil edilmez.
-                    </li>
-                    <li>
-                        <strong>Analiz Araçları:</strong> Kullanıcı
-                        etkileşimlerini anonim olarak analiz etmek için
-                        kullanılır. Kişisel bilgileriniz paylaşılmaz.
-                    </li>
-                </ul>
-
-                <h2>5. Veri Saklama</h2>
-                <p>
-                    Topladığımız verileri yalnızca bu Gizlilik Politikası'nda
-                    belirtilen amaçlar doğrultusunda ve yürürlükteki yasalara
-                    uygun olarak saklarız. Verileriniz, bu politikada belirtilen
-                    amaçlar için gerekli olduğu sürece saklanacaktır.
-                </p>
-                <ul>
-                    <li>Kullanım verileri: En fazla 12 ay</li>
-                    <li>Çökme raporları: En fazla 90 gün</li>
-                    <li>Hesap bilgileri: Hesabınız silinene kadar</li>
-                </ul>
-
-                <h2>6. Kullanıcı Hakları</h2>
-                <p>KVKK ve GDPR kapsamında aşağıdaki haklara sahipsiniz:</p>
-                <ul class="icon-list">
-                    <li>Verilerinize erişim talep etme</li>
-                    <li>Verilerinizin düzeltilmesini isteme</li>
-                    <li>Verilerinizin silinmesini talep etme</li>
-                    <li>Veri işlemeye itiraz etme</li>
-                    <li>Veri taşınabilirliği talep etme</li>
-                </ul>
-
-                <h2>7. Çocukların Gizliliği</h2>
-                <p>
-                    Uygulamamız 13 yaşından küçük kişiler için tasarlanmamıştır.
-                    13 yaşından küçüklerden bilerek kişisel bilgi toplamıyoruz.
-                    Bir ebeveyn veya veli olduğunu ve çocuğunuzun bize kişisel
-                    bilgi verdiğini fark ederseniz, lütfen bizimle iletişime
-                    geçin.
+                <h2 data-i18n="privacyPage.h1">1. Information We Access</h2>
+                <p data-i18n="privacyPage.p1">
+                    Similarly requests permission to access your iOS Photo Library solely to scan, compare, and display similar or duplicate photos. We do not collect, transmit, store, or share your personal photos, EXIF data, or location metadata on any remote servers.
                 </p>
 
-                <h2>8. Gizlilik Politikası Değişiklikleri</h2>
-                <p>
-                    Gizlilik Politikamızı zaman zaman güncelleyebiliriz.
-                    Değişiklikler yapıldığında, yeni gizlilik politikasını bu
-                    sayfada yayınlayarak sizi bilgilendireceğiz. Önemli
-                    değişiklikler için uygulama içi bildirim gönderilebilir.
-                </p>
-                <p>
-                    Bu sayfayı düzenli olarak kontrol etmenizi öneririz.
-                    Değişiklikler bu sayfada yayınlandıktan sonra geçerli olur.
+                <h2 data-i18n="privacyPage.h2">2. On-Device Image Processing</h2>
+                <p data-i18n="privacyPage.p2">
+                    Image analysis is performed using Apple's Vision framework (FeaturePrint embeddings) entirely on your device's Neural Engine. Generated mathematical feature vectors are cached locally in your device's sandboxed SwiftData database and deleted when photos are removed.
                 </p>
 
-                <h2>9. İletişim</h2>
-                <p>
-                    Bu Gizlilik Politikası ile ilgili herhangi bir sorunuz,
-                    endişeniz veya talebiniz varsa, lütfen bizimle iletişime
-                    geçin:
+                <h2 data-i18n="privacyPage.h3">3. Third-Party Analytics & Tracking</h2>
+                <p data-i18n="privacyPage.p3">
+                    Similarly contains zero third-party tracking SDKs, zero ad networks, and zero telemetry frameworks. We do not track your activity, your device ID, or your personal identity.
                 </p>
 
-                <div class="highlight-box">
-                    <p>
-                        <strong>📧 E-posta:</strong>
-                        <a href="mailto:tamersavasci@icloud.com"
-                            >tamersavasci@icloud.com</a
-                        >
-                    </p>
-                    <p style="margin-top: 0.5rem">
-                        <strong>⏱️ Yanıt Süresi:</strong> 48 saat içinde
-                    </p>
-                </div>
-
-                <h2>10. Yasal Uyumluluk</h2>
-                <p>
-                    Similarly, aşağıdaki veri koruma düzenlemelerine uygundur:
+                <h2 data-i18n="privacyPage.h4">4. Your Rights & Photo Deletion</h2>
+                <p data-i18n="privacyPage.p4">
+                    Whenever you choose to delete photos, Similarly utilizes Apple's official PhotoKit API, prompting a native iOS confirmation. Deleted items are safely relocated to Apple's 'Recently Deleted' album, allowing 30 days for easy recovery.
                 </p>
-                <ul>
-                    <li>
-                        <strong>KVKK</strong> (Kişisel Verilerin Korunması
-                        Kanunu) - Türkiye
-                    </li>
-                    <li>
-                        <strong>GDPR</strong> (General Data Protection
-                        Regulation) - Avrupa Birliği
-                    </li>
-                    <li>
-                        <strong>CCPA</strong> (California Consumer Privacy Act)
-                        - California, ABD
-                    </li>
-                </ul>
 
-                <p
-                    style="
-                        margin-top: 3rem;
-                        padding-top: 2rem;
-                        border-top: 2px solid var(--gray-100);
-                        font-style: italic;
-                        color: var(--gray-500);
-                    "
-                >
-                    Son güncelleme: 14 Ekim 2025<br />
-                    Bu belge Türkçe ve İngilizce olarak hazırlanmıştır. Çelişki
-                    durumunda Türkçe versiyon geçerlidir.
+                <h2 data-i18n="privacyPage.h5">5. Contact Us</h2>
+                <p data-i18n="privacyPage.p5">
+                    If you have any questions or feedback regarding this Privacy Policy, feel free to contact us at support@similarly.app.
                 </p>
             </article>
         </main>
 
         <footer>
             <div class="container">
-                <h3 style="margin-bottom: 1rem; font-size: 1.5rem">
-                    Similarly
-                </h3>
-                <p
-                    style="
-                        color: var(--gray-400);
-                        max-width: 32rem;
-                        margin: 0 auto;
-                    "
-                >
-                    Gizlilik odaklı fotoğraf yönetimi
-                </p>
-                <div class="footer-links">
-                    <a href="index.html">Ana Sayfa</a>
-                    <a href="#features">Özellikler</a>
-                    <a href="privacy.html">Gizlilik Politikası</a>
-                    <a href="privacy_en.html">Privacy Policy</a>
-                    <a href="#contact">İletişim</a>
-                </div>
-                <p class="copyright">
-                    © 2025 Similarly. Tüm hakları saklıdır. Made with ❤️ in
-                    Turkey
-                </p>
+                <p class="copyright" data-i18n="footer.rights">© 2025 Similarly. All rights reserved.</p>
             </div>
         </footer>
+
+        <script src="translations.js"></script>
+        <script>
+            function setLanguage(lang) {
+                if (!translations[lang]) lang = 'en';
+                localStorage.setItem('similarly_lang', lang);
+                document.getElementById('langSelect').value = lang;
+
+                const t = translations[lang];
+                document.documentElement.lang = lang;
+                document.documentElement.dir = t.dir || 'ltr';
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    const parts = key.split('.');
+                    let val = t;
+                    for (const part of parts) {
+                        if (val) val = val[part];
+                    }
+                    if (val) el.textContent = val;
+                });
+            }
+
+            function getInitialLanguage() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLang = urlParams.get('lang');
+                if (urlLang && translations[urlLang]) return urlLang;
+
+                const savedLang = localStorage.getItem('similarly_lang');
+                if (savedLang && translations[savedLang]) return savedLang;
+
+                const navLang = navigator.language || navigator.userLanguage || '';
+                if (navLang.startsWith('tr')) return 'tr';
+                if (navLang.startsWith('de')) return 'de';
+                if (navLang.startsWith('es')) return 'es';
+                if (navLang.startsWith('fr')) return 'fr';
+                if (navLang.startsWith('ja')) return 'ja';
+                if (navLang.startsWith('zh')) return 'zh-Hans';
+                if (navLang.startsWith('ar')) return 'ar';
+
+                return 'en';
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const initialLang = getInitialLanguage();
+                setLanguage(initialLang);
+
+                document.getElementById('langSelect').addEventListener('change', (e) => {
+                    setLanguage(e.target.value);
+                });
+            });
+        </script>
     </body>
 </html>
