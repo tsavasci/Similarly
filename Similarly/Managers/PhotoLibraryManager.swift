@@ -8,7 +8,9 @@
 import Combine
 import Foundation
 import Photos
+import PhotosUI
 import SwiftData
+import UIKit
 import os
 
 private let logger = Logger(subsystem: "com.similarly.app", category: "library")
@@ -87,6 +89,20 @@ final class PhotoLibraryManager: NSObject, ObservableObject, PHPhotoLibraryChang
         } else {
             setError(L10n.t("errors.photo_access_denied"))
         }
+    }
+
+    /// Sınırlı erişim modunda kullanıcının ek fotoğraflar seçmesi için sistem arayüzünü açar.
+    @MainActor
+    func presentLimitedLibraryPicker() {
+        guard let windowScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first(where: { $0.activationState == .foregroundActive }) ?? UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
+              let rootViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            return
+        }
+        var topController = rootViewController
+        while let presented = topController.presentedViewController {
+            topController = presented
+        }
+        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: topController)
     }
 
     // MARK: - Fetching Assets

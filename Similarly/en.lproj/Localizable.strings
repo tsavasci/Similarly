@@ -186,3 +186,5 @@
 "celebration.share_message" = "I just cleaned %lld unnecessary photos and reclaimed %@ of storage using Similarly! 🚀";
 "settings.about.rate_app" = "Rate on App Store";
 "main.stats.potential_savings" = "Estimated Savings";
+"main.limited_access.banner" = "Limited photo access is enabled.";
+"main.limited_access.action" = "Select More Photos";

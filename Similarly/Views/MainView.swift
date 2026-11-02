@@ -107,6 +107,35 @@ struct MainView: View {
                         .padding(.horizontal)
                     }
 
+                    // Sınırlı erişim bildirimi
+                    if photoManager.authorizationStatus == .limited {
+                        Button(action: {
+                            photoManager.presentLimitedLibraryPicker()
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.blue)
+
+                                Text(L10n.k("main.limited_access.banner"))
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+
+                                Spacer()
+
+                                Text(L10n.k("main.limited_access.action"))
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 16)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                        .padding(.horizontal)
+                    }
+
                     Spacer()
 
                     // Ana butonlar

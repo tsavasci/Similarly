@@ -186,3 +186,5 @@
 "celebration.share_message" = "Similarly ile %lld gereksiz fotoğrafı temizleyerek %@ depolama alanı kazandım! 🚀";
 "settings.about.rate_app" = "App Store'da Puanla";
 "main.stats.potential_savings" = "Tahmini Tasarruf";
+"main.limited_access.banner" = "Sınırlı fotoğraf erişimi etkin.";
+"main.limited_access.action" = "Daha Fazla Fotoğraf Seç";

@@ -186,3 +186,5 @@
 "celebration.share_message" = "Je viens de nettoyer %lld photos inutiles et libéré %@ d'espace avec Similarly ! 🚀";
 "settings.about.rate_app" = "Noter sur l'App Store";
 "main.stats.potential_savings" = "Économies Estimées";
+"main.limited_access.banner" = "L'accès limité aux photos est activé.";
+"main.limited_access.action" = "Sélectionner plus de photos";

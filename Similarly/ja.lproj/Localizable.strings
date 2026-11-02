@@ -186,3 +186,5 @@
 "celebration.share_message" = "Similarlyを使って%lld枚の不要な写真を削除し、%@の空き容量を確保しました！ 🚀";
 "settings.about.rate_app" = "App Storeで評価";
 "main.stats.potential_savings" = "節約可能な容量";
+"main.limited_access.banner" = "写真へのアクセスが制限されています。";
+"main.limited_access.action" = "さらに写真を選択";

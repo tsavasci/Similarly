@@ -186,3 +186,5 @@
 "celebration.share_message" = "لقد قمت للتو بتنظيف %lld صورة غير ضرورية واستعدت %@ من مساحة التخزين باستخدام تطبيق Similarly! 🚀";
 "settings.about.rate_app" = "التقييم في App Store";
 "main.stats.potential_savings" = "المساحة الموفرة المقدرة";
+"main.limited_access.banner" = "تم تمكين الوصول المحدود للصور.";
+"main.limited_access.action" = "تحديد المزيد من الصور";

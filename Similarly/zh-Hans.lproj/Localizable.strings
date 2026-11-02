@@ -186,3 +186,5 @@
 "celebration.share_message" = "我刚刚使用 Similarly 清理了 %lld 张不需要的照片，释放了 %@ 存储空间！ 🚀";
 "settings.about.rate_app" = "在 App Store 评分";
 "main.stats.potential_savings" = "预计可节省";
+"main.limited_access.banner" = "已启用部分照片访问权限。";
+"main.limited_access.action" = "选择更多照片";
