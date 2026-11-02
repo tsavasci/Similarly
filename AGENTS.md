@@ -10,7 +10,8 @@ Bir göreve başlamadan önce bağlamı eksiksiz kurmak için şu referans dosya
 1. **[PRD.md](file:///Users/tamersavasci/Documents/Similarly/PRD.md):** Ürünün ne yaptığı, hedef kitlesi, iş kuralları, benzerlik/kopya tespiti ve güvenli silme akışı.
 2. **[Architecture.md](file:///Users/tamersavasci/Documents/Similarly/Architecture.md):** Vision ve Accelerate tabanlı analiz motoru (`PhotoAnalyzer`), kayan pencere ve SimHash kümeleme (`SimilarityEngine`), SwiftData önbellek yapısı (`ProcessedPhoto`) ve PhotoKit yaşam döngüsü.
 3. **[Design-System.md](file:///Users/tamersavasci/Documents/Similarly/Design-System.md):** Sıcak ve güven verici tasarım sistemi, renk token'ları, tipografi, haptikler ve bileşenler (`StatCard`, `ProcessingOverlay`, `SimilarPhotoCard`).
-4. **[ASO_AND_MARKETING_PACK.md](file:///Users/tamersavasci/Documents/Similarly/ASO_AND_MARKETING_PACK.md):** 8 dilde App Store anahtar kelimeleri, açıklama metinleri ve dönüşüm stratejileri.
+4. **[Web Sitesi (Similarly/web)](file:///Users/tamersavasci/Documents/Similarly/Similarly/web):** Landing page, responsive arayüz (`index.html`), gizlilik politikası (`privacy.html`), 8 dilde web çevirileri (`translations.js`) ve App Store indirme vitrini.
+5. **[ASO_AND_MARKETING_PACK.md](file:///Users/tamersavasci/Documents/Similarly/ASO_AND_MARKETING_PACK.md):** 8 dilde App Store anahtar kelimeleri, açıklama metinleri ve dönüşüm stratejileri.
 
 ---
 
@@ -85,10 +86,23 @@ Bir kod değişikliğini tamamlamadan önce şu maddeleri kontrol et:
 
 ---
 
-## 6. Sanal Ofis (`Ajan Ofisi`) Commit ve Simülatör Test Kuralları (Zorunlu)
+## 6. Sanal Ofis (`Ajan Ofisi`) Kadrosu ve Commit Kuralları (Zorunlu)
 
+### 6.1. Sanal Ofis Kadrosu (8 Ajan)
+- **Boss Atlas (office-manager):** Yönetici Masası
+- **Arch Swift (ios-architect-dev):** Masa 1 — iOS Baş Mimarı
+- **Bug Hunter (ios-debugger):** Masa 2 — Debug ve Performans Uzmanı
+- **Test Guard (ios-qa-tester):** Masa 3 — QA ve Test Otomasyon Uzmanı
+- **Growth Maven (aso-pr-specialist):** Masa 4 — ASO ve PR Uzmanı
+- **Care Hero (customer-support-lead):** Masa 5 — Müşteri Destek ve UX Lideri
+- **Shield Ops (security-privacy-auditor):** Masa 6 — Güvenlik ve Gizlilik Denetçisi
+- **Pixel Craft (web-designer):** Masa 7 — Web Tasarımcısı ve Frontend Geliştiricisi (`Similarly/web`)
+
+### 6.2. Kırmızı Çizgi Kuralları
 1. **🛑 Test Edilmemiş Revizyon Commit Edilemez:**
    - **Xcode iOS Simülatöründe (`xcodebuild test -project Similarly.xcodeproj -scheme Similarly -destination 'platform=iOS Simulator,...'`) test edilmemiş ve `** TEST SUCCEEDED **` sonucu alınmamış hiçbir kod revizyonu kesinlikle `git commit` veya `git push` yapılamaz!**
-2. **🏷️ Zorunlu Commit Başlığı (`Ajan Ofisi`):**
-   - Sanal ofis ajanlarının (`Boss Atlas`, `Arch Swift`, `Bug Hunter`, `Test Guard`, `Growth Maven`, `Care Hero`, `Shield Ops`) yaptığı tüm commit mesajlarında mutlaka **`Ajan Ofisi:`** başlığı yer almalıdır.
+2. **🌐 Web Tasarım ve Dil Bütünlüğü:**
+   - `Similarly/web` üzerinde çalışan `Pixel Craft`, 8 dildeki `translations.js` bütünlüğünü, mobil öncelikli responsive düzeni ve `DesignSystem.Colors.accent` temasını korur.
+3. **🏷️ Zorunlu Commit Başlığı (`Ajan Ofisi`):**
+   - Sanal ofis ajanlarının yaptığı tüm commit mesajlarında mutlaka **`Ajan Ofisi:`** başlığı yer almalıdır.
    - Commit gövdesinde hangi ajanın hangi değişikliği yaptığı ve Xcode Simülatör test sonucu açıkça yazılmalıdır.
