@@ -11,7 +11,12 @@ import SwiftUI
 struct OnboardingView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @Binding var isPresented: Bool
-    @State private var currentPage = 0
+    @State private var currentPage: Int
+
+    init(isPresented: Binding<Bool>, initialPage: Int = 0) {
+        self._isPresented = isPresented
+        self._currentPage = State(initialValue: initialPage)
+    }
 
     let pages: [OnboardingPage] = [
         OnboardingPage(

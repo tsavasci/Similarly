@@ -11,8 +11,8 @@ import SwiftUI
 
 /// Ana uygulama görünümü - fotoğraf kütüphanesine erişim ve benzer fotoğraf bulma
 struct MainView: View {
-    @StateObject private var photoManager = PhotoLibraryManager()
-    @StateObject private var similarityManager = SimilarityManager()
+    @StateObject private var photoManager: PhotoLibraryManager
+    @StateObject private var similarityManager: SimilarityManager
     @Environment(\.modelContext) private var modelContext
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showingOnboarding = false
@@ -20,6 +20,19 @@ struct MainView: View {
     @State private var showingSettings = false
     @State private var showingError = false
     @State private var analysisTask: Task<Void, Never>?
+
+    init(photoManager: PhotoLibraryManager? = nil, similarityManager: SimilarityManager? = nil) {
+        if let pm = photoManager {
+            self._photoManager = StateObject(wrappedValue: pm)
+        } else {
+            self._photoManager = StateObject(wrappedValue: PhotoLibraryManager())
+        }
+        if let sm = similarityManager {
+            self._similarityManager = StateObject(wrappedValue: sm)
+        } else {
+            self._similarityManager = StateObject(wrappedValue: SimilarityManager())
+        }
+    }
 
     var body: some View {
         NavigationStack {

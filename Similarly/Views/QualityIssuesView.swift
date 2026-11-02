@@ -14,7 +14,13 @@ struct QualityIssuesView: View {
     @ObservedObject var photoManager: PhotoLibraryManager
     @State private var showingDeleteConfirmation = false
     @State private var photosToDelete: [PhotoItem] = []
-    @State private var selectedTab = 0
+    @State private var selectedTab: Int
+
+    init(similarityManager: SimilarityManager, photoManager: PhotoLibraryManager, initialTab: Int = 0) {
+        self.similarityManager = similarityManager
+        self.photoManager = photoManager
+        self._selectedTab = State(initialValue: initialTab)
+    }
     @State private var showingCelebration = false
     @State private var lastDeletedCount = 0
     @State private var lastSavedBytes: Int64 = 0

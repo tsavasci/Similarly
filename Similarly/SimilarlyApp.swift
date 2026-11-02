@@ -2,7 +2,7 @@
 //  SimilarlyApp.swift
 //  Similarly
 //
-//  Created by Tamer Savaşcı on 13.10.2025.
+//  Created by Tamer Savaşçı on 13.10.2025.
 //
 
 import SwiftData
@@ -11,16 +11,25 @@ import SwiftUI
 @main
 struct SimilarlyApp: App {
     @AppStorage("appLanguage") private var appLanguage: String = "system"
-    
+
     let modelContainer: ModelContainer
-    
+
+    private var screenshotScreen: Int? {
+        guard let idx = CommandLine.arguments.firstIndex(of: "--screenshot"),
+              idx + 1 < CommandLine.arguments.count,
+              let screen = Int(CommandLine.arguments[idx + 1]) else {
+            return nil
+        }
+        return screen
+    }
+
     init() {
         // Ensure Application Support directory exists before creating ModelContainer
         let fileManager = FileManager.default
         if let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
             try? fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
         }
-        
+
         // Configure ModelContainer with proper error handling
         let config = ModelConfiguration(isStoredInMemoryOnly: false)
         do {
@@ -41,8 +50,13 @@ struct SimilarlyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .environment(\.locale, L10n.locale(forLanguage: L10n.resolvedLanguageCode(for: appLanguage)))
+            if let screen = screenshotScreen {
+                ScreenshotHostView(screenNumber: screen)
+                    .environment(\.locale, L10n.locale(forLanguage: L10n.resolvedLanguageCode(for: appLanguage)))
+            } else {
+                MainView()
+                    .environment(\.locale, L10n.locale(forLanguage: L10n.resolvedLanguageCode(for: appLanguage)))
+            }
         }
         .modelContainer(modelContainer)
     }
