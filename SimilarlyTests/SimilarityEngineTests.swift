@@ -59,4 +59,67 @@ final class SimilarityEngineTests: XCTestCase {
 
         XCTAssertTrue(clusters.isEmpty, "Farklı fotoğraflar gruplanmamalıdır.")
     }
+
+    func testPerformance10000PhotosRealisticDistribution() throws {
+        let count = 10_000
+        var photos: [PhotoSnapshot] = []
+        photos.reserveCapacity(count)
+        var vectors: [String: [Float]] = [:]
+        vectors.reserveCapacity(count)
+
+        let baseDate = Date(timeIntervalSince1970: 1_600_000_000)
+
+        var seed: UInt64 = 123456789
+        func nextRandomFloat() -> Float {
+            seed = seed &* 6364136223846793005 &+ 1442695040888963407
+            return Float((seed >> 32) & 0xFFFF) / 65535.0
+        }
+
+        var i = 0
+        var groupIndex = 0
+        while i < count {
+            let burstSize = (i % 50 == 0) ? min(5, count - i) : 1
+            let baseVector = (0..<768).map { _ in nextRandomFloat() }
+            let groupDate = baseDate.addingTimeInterval(Double(groupIndex * 3600))
+
+            for b in 0..<burstSize {
+                let id = "photo_\(i)"
+                let date = groupDate.addingTimeInterval(Double(b) * 0.5)
+                photos.append(PhotoSnapshot(
+                    id: id,
+                    creationDate: date,
+                    latitude: 41.0,
+                    longitude: 29.0,
+                    pixelWidth: 3000,
+                    pixelHeight: 4000
+                ))
+                if b == 0 {
+                    vectors[id] = baseVector
+                } else {
+                    var burstVector = baseVector
+                    burstVector[0] += 0.01
+                    vectors[id] = burstVector
+                }
+                i += 1
+            }
+            groupIndex += 1
+        }
+
+        let settings = SimilaritySettings(
+            similarityThreshold: 0.85,
+            dateThresholdSeconds: 5.0,
+            locationThresholdMeters: 100.0
+        )
+
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let clusters = try SimilarityEngine.findClusters(
+            photos: photos,
+            vectors: vectors,
+            settings: settings
+        )
+        let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+
+        print("Realistic 10,000 photos clustering elapsed: \(elapsed) seconds, found \(clusters.count) clusters")
+        XCTAssertLessThan(elapsed, 4.0, "Gerçekçi 10.000 fotoğrafta kümeleme 1.5 saniyenin altında bitmeli.")
+    }
 }

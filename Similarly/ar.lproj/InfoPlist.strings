@@ -1,0 +1,4 @@
+/* InfoPlist.strings (ar) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "يحتاج Similarly إلى إذن الوصول إلى مكتبة الصور للتعرف على الصور المتشابهة والمكررة.";

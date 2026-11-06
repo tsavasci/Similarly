@@ -1,0 +1,4 @@
+/* InfoPlist.strings (tr) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "Similarly, benzer ve kopya fotoğrafları bulmak için fotoğraf kütüphanenize erişmek istiyor.";

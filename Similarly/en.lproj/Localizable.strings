@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "Estimated Savings";
 "main.limited_access.banner" = "Limited photo access is enabled.";
 "main.limited_access.action" = "Select More Photos";
+
+"settings.about.send_feedback" = "Send Feedback & Support";
+"settings.about.privacy_policy" = "Privacy Policy";
+"media.filter.all" = "All";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1 min";
+"media.filter.large_files" = "Large";
+"media.filter.empty" = "No media matching this filter";
+"main.audit.title" = "Storage Audit";
+"main.audit.subtitle" = "Instant overview of cleanable items";

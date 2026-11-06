@@ -110,6 +110,21 @@ final class ReviewManager {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
 
+    /// Kullanıcının olası sorun ve önerilerini doğrudan geliştiriciye iletmesini sağlayarak
+    /// App Store'a olumsuz 1 yıldızlı yorum yazılmasını önler.
+    static func sendFeedbackEmail() {
+        let email = "support@similarly.app"
+        let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        let systemVersion = UIDevice.current.systemVersion
+        let model = UIDevice.current.model
+        let subject = "Similarly Support & Feedback (v\(appVersion) b\(buildNumber) - iOS \(systemVersion) - \(model))"
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let url = URL(string: "mailto:\(email)?subject=\(encodedSubject)") {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }
+
     // İstatistik Okuyucuları
     var lifetimePhotosDeleted: Int {
         userDefaults.integer(forKey: keyLifetimePhotosDeleted)

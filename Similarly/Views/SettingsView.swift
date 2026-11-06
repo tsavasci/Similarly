@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Uygulama ayarları görünümü
+/// Uygulama ayarları görünümü - Emil Kowalski fiziksel yay geçişleri ve modern HIG form yapısı
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("similarityThreshold") private var similarityThreshold: Double = 0.85
@@ -37,12 +37,16 @@ struct SettingsView: View {
             LanguageOption(code: "system", flag: "🌐"),
             LanguageOption(code: "en", flag: "🇺🇸"),
             LanguageOption(code: "tr", flag: "🇹🇷"),
-            LanguageOption(code: "ar", flag: "🇸🇦"),
-            LanguageOption(code: "zh-Hans", flag: "🇨🇳"),
-            LanguageOption(code: "es", flag: "🇪🇸"),
-            LanguageOption(code: "fr", flag: "🇫🇷"),
             LanguageOption(code: "de", flag: "🇩🇪"),
+            LanguageOption(code: "fr", flag: "🇫🇷"),
+            LanguageOption(code: "es", flag: "🇪🇸"),
+            LanguageOption(code: "it", flag: "🇮🇹"),
+            LanguageOption(code: "pt-BR", flag: "🇧🇷"),
             LanguageOption(code: "ja", flag: "🇯🇵"),
+            LanguageOption(code: "ko", flag: "🇰🇷"),
+            LanguageOption(code: "zh-Hans", flag: "🇨🇳"),
+            LanguageOption(code: "ru", flag: "🇷🇺"),
+            LanguageOption(code: "ar", flag: "🇸🇦"),
         ]
     }
 
@@ -92,7 +96,10 @@ struct SettingsView: View {
                 Section {
                     ForEach(LanguageOption.all) { option in
                         Button {
-                            appLanguage = option.code
+                            DesignSystem.Haptics.selection()
+                            withAnimation(DesignSystem.Springs.interactive) {
+                                appLanguage = option.code
+                            }
                         } label: {
                             HStack(spacing: 12) {
                                 Text(option.flag)
@@ -100,12 +107,12 @@ struct SettingsView: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(languageDisplayName(for: option))
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
 
                                     if option.code == "system" {
                                         Text(L10n.k("settings.language.follow_system"))
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(.secondary)
                                     }
                                 }
 
@@ -113,11 +120,13 @@ struct SettingsView: View {
 
                                 if selectedLanguageOption.code == option.code {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(.blue)
+                                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                                 }
                             }
+                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.bouncy(scale: 0.98))
                     }
                 } header: {
                     Text(L10n.k("settings.language.title"))
@@ -128,35 +137,50 @@ struct SettingsView: View {
                     }
                 }
 
-                // Hazır Ayarlar
+                // Hazır Ayarlar (Emil Kowalski dokunsal kart seçimi)
                 Section {
                     ForEach(PresetType.allCases, id: \.self) { preset in
-                        Button(action: {
-                            applyPreset(preset)
-                            selectedPreset = preset
-                        }) {
-                            HStack {
-                                Image(systemName: preset.icon)
-                                    .foregroundColor(.blue)
-                                    .frame(width: 30)
+                        Button {
+                            DesignSystem.Haptics.selection()
+                            withAnimation(DesignSystem.Springs.settle) {
+                                applyPreset(preset)
+                                selectedPreset = preset
+                            }
+                        } label: {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    Circle()
+                                        .fill(selectedPreset == preset ? Color.blue.opacity(0.15) : Color(UIColor.tertiarySystemFill))
+                                        .frame(width: 38, height: 38)
 
-                                VStack(alignment: .leading, spacing: 4) {
+                                    Image(systemName: preset.icon)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(selectedPreset == preset ? Color.blue : Color.secondary)
+                                }
+
+                                VStack(alignment: .leading, spacing: 3) {
                                     Text(preset.title)
                                         .font(.headline)
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                     Text(preset.description)
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
 
                                 Spacer()
 
                                 if selectedPreset == preset {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.blue)
+                                        .font(.title3)
+                                        .foregroundStyle(.blue)
+                                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                                 }
                             }
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.bouncy(scale: 0.98))
                     }
                 } header: {
                     Text(L10n.k("settings.quick.title"))
@@ -164,22 +188,32 @@ struct SettingsView: View {
                     Text(L10n.k("settings.quick.footer"))
                 }
 
-                // Genel Ayarlar
+                // Genel Ayarlar (Benzerlik)
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text(L10n.k("settings.similarity.title"))
                             Spacer()
                             Text(L10n.percent(similarityThreshold))
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: similarityThreshold)
                         }
 
                         Slider(value: $similarityThreshold, in: 0.80...1.0, step: 0.05)
                             .tint(.blue)
+                            .onChange(of: similarityThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.similarity.desc"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
@@ -195,15 +229,25 @@ struct SettingsView: View {
                             Text(L10n.k("settings.date_proximity.title"))
                             Spacer()
                             Text(L10n.f("settings.seconds", Int(dateThreshold)))
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: dateThreshold)
                         }
 
                         Slider(value: $dateThreshold, in: 1...60, step: 1)
                             .tint(.blue)
+                            .onChange(of: dateThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.date_proximity.desc"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
 
@@ -212,15 +256,25 @@ struct SettingsView: View {
                             Text(L10n.k("settings.location_proximity.title"))
                             Spacer()
                             Text(L10n.f("settings.meters", Int(locationThreshold)))
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: locationThreshold)
                         }
 
                         Slider(value: $locationThreshold, in: 10...1000, step: 10)
                             .tint(.blue)
+                            .onChange(of: locationThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.location_proximity.desc"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
@@ -236,15 +290,25 @@ struct SettingsView: View {
                             Text(L10n.k("settings.blur_threshold.title"))
                             Spacer()
                             Text("\(Int(blurThreshold))")
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: blurThreshold)
                         }
 
                         Slider(value: $blurThreshold, in: 50...200, step: 10)
-                            .tint(.orange)
+                            .tint(DesignSystem.Colors.warning)
+                            .onChange(of: blurThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.blur_threshold.desc"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
 
@@ -253,15 +317,25 @@ struct SettingsView: View {
                             Text(L10n.k("settings.dark_threshold.title"))
                             Spacer()
                             Text(L10n.percent(darknessThreshold))
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: darknessThreshold)
                         }
 
                         Slider(value: $darknessThreshold, in: 0.1...0.4, step: 0.05)
                             .tint(.purple)
+                            .onChange(of: darknessThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.dark_threshold.desc"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
 
@@ -270,15 +344,25 @@ struct SettingsView: View {
                             Text(L10n.k("settings.brightness_threshold.title"))
                             Spacer()
                             Text(L10n.percent(brightnessThreshold))
-                                .foregroundColor(.secondary)
+                                .font(.subheadline.monospacedDigit())
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color(UIColor.tertiarySystemFill), in: Capsule())
+                                .contentTransition(.numericText())
+                                .animation(DesignSystem.Springs.interactive, value: brightnessThreshold)
                         }
 
                         Slider(value: $brightnessThreshold, in: 0.7...1.0, step: 0.05)
-                            .tint(.yellow)
+                            .tint(DesignSystem.Colors.favorite)
+                            .onChange(of: brightnessThreshold) { _, _ in
+                                updateSelectedPreset()
+                            }
 
                         Text(L10n.k("settings.brightness_threshold.desc"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                 } header: {
@@ -289,18 +373,54 @@ struct SettingsView: View {
 
                 // Hakkında
                 Section {
-                    Button(action: {
+                    Button {
+                        DesignSystem.Haptics.impact(.light)
                         ReviewManager.openAppStoreReview()
-                    }) {
+                    } label: {
                         HStack {
                             Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
+                                .foregroundStyle(DesignSystem.Colors.favorite)
                             Text(L10n.k("settings.about.rate_app"))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.forward.app")
                                 .font(.footnote)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.bouncy(scale: 0.98))
+
+                    Button {
+                        DesignSystem.Haptics.impact(.light)
+                        ReviewManager.sendFeedbackEmail()
+                    } label: {
+                        HStack {
+                            Image(systemName: "envelope.fill")
+                                .foregroundStyle(.blue)
+                            Text(L10n.k("settings.about.send_feedback"))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.bouncy(scale: 0.98))
+
+                    if let privacyURL = URL(string: "https://tsavasci.github.io/Similarly/privacy.html") {
+                        Link(destination: privacyURL) {
+                            HStack {
+                                Image(systemName: "hand.raised.fill")
+                                    .foregroundStyle(.green)
+                                Text(L10n.k("settings.about.privacy_policy"))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "arrow.up.forward.square")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -308,22 +428,26 @@ struct SettingsView: View {
                         Text(L10n.k("settings.about.version"))
                         Spacer()
                         Text(appVersion)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     HStack {
                         Text(L10n.k("settings.about.build"))
                         Spacer()
                         Text(appBuild)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
-                    Link(destination: URL(string: "https://github.com")!) {
-                        HStack {
-                            Text(L10n.k("settings.about.github"))
-                            Spacer()
-                            Image(systemName: "arrow.up.forward.square")
-                                .foregroundColor(.blue)
+                    if let gitHubURL = URL(string: "https://github.com/tsavasci/Similarly") {
+                        Link(destination: gitHubURL) {
+                            HStack {
+                                Text(L10n.k("settings.about.github"))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "arrow.up.forward.square")
+                                    .font(.footnote)
+                                    .foregroundStyle(.blue)
+                            }
                         }
                     }
                 } header: {
@@ -334,7 +458,7 @@ struct SettingsView: View {
                             .font(.caption)
                         Text(L10n.k("settings.about.tagline"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.top, 8)
                 }
@@ -342,14 +466,20 @@ struct SettingsView: View {
                 // Varsayılan Ayarlar
                 Section {
                     Button(role: .destructive) {
-                        resetToDefaults()
+                        DesignSystem.Haptics.notification(.warning)
+                        withAnimation(DesignSystem.Springs.settle) {
+                            resetToDefaults()
+                        }
                     } label: {
                         HStack {
                             Spacer()
                             Text(L10n.k("settings.reset"))
+                                .fontWeight(.medium)
                             Spacer()
                         }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.bouncy(scale: 0.98))
                 } footer: {
                     Text(L10n.k("settings.reset.footer"))
                 }
@@ -357,13 +487,18 @@ struct SettingsView: View {
             .navigationTitle(L10n.k("settings.nav_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button(L10n.t("common.ok")) {
+                        DesignSystem.Haptics.impact(.light)
                         dismiss()
                     }
+                    .fontWeight(.semibold)
                 }
             }
         }
+        .presentationDetents([.fraction(0.92), .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(DesignSystem.CornerRadius.sheet)
         .onAppear {
             validateLanguagePreference()
             updateSelectedPreset()
@@ -386,7 +521,14 @@ struct SettingsView: View {
             return L10n.t("settings.language.system")
         }
 
-        let localeIdentifier = option.code == "zh-Hans" ? "zh_Hans" : option.code
+        let localeIdentifier: String
+        if option.code == "zh-Hans" {
+            localeIdentifier = "zh_Hans"
+        } else if option.code == "pt-BR" {
+            localeIdentifier = "pt_BR"
+        } else {
+            localeIdentifier = option.code
+        }
         let locale = Locale(identifier: localeIdentifier)
         let languageCode = locale.language.languageCode?.identifier ?? option.code
 

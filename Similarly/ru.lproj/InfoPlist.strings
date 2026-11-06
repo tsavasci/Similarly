@@ -1,0 +1,4 @@
+/* InfoPlist.strings (ru) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "Similarly требуется доступ к медиатеке для поиска похожих и дублирующихся фото.";

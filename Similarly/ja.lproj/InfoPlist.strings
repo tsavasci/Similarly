@@ -1,0 +1,4 @@
+/* InfoPlist.strings (ja) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "Similarly は、類似写真や重複写真を検出するために写真ライブラリへのアクセスが必要です。";

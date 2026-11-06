@@ -142,8 +142,48 @@ struct MediaPhotoGrid: View {
     let mediaType: MediaType
     let onDelete: ([PhotoItem]) -> Void
 
+    enum MediaSizeFilter: String, CaseIterable, Identifiable {
+        case all
+        case over100MB
+        case over500MB
+        case longDuration
+
+        var id: String { rawValue }
+
+        func title(for type: MediaType) -> String {
+            switch self {
+            case .all:
+                return L10n.t("media.filter.all")
+            case .over100MB:
+                return "> 100 MB"
+            case .over500MB:
+                return "> 500 MB"
+            case .longDuration:
+                return type == .video ? L10n.t("media.filter.long_video") : L10n.t("media.filter.large_files")
+            }
+        }
+    }
+
+    @State private var selectedFilter: MediaSizeFilter = .all
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
+
+    private var filteredPhotos: [PhotoItem] {
+        switch selectedFilter {
+        case .all:
+            return photos
+        case .over100MB:
+            return photos.filter { $0.estimatedFileSize >= 100 * 1024 * 1024 }
+        case .over500MB:
+            return photos.filter { $0.estimatedFileSize >= 500 * 1024 * 1024 }
+        case .longDuration:
+            if mediaType == .video {
+                return photos.filter { $0.asset.duration >= 60.0 }
+            } else {
+                return photos.filter { $0.estimatedFileSize >= 20 * 1024 * 1024 }
+            }
+        }
+    }
 
     private let columns = [
         GridItem(.flexible(minimum: 100), spacing: 8),
@@ -171,8 +211,8 @@ struct MediaPhotoGrid: View {
                 }
                 .padding()
             } else {
-                // Açıklama
-                VStack(alignment: .leading, spacing: 8) {
+                // Açıklama & Hızlı Boyut Filtresi
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: mediaType.icon)
                             .foregroundColor(mediaType.color)
@@ -184,39 +224,85 @@ struct MediaPhotoGrid: View {
                     Text(mediaType.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
+
+                    // Boyut ve Süre Filtre Çipleri
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(MediaSizeFilter.allCases) { filter in
+                                Button {
+                                    DesignSystem.Haptics.selection()
+                                    withAnimation(DesignSystem.Springs.interactive) {
+                                        selectedFilter = filter
+                                        selectedPhotos.removeAll()
+                                    }
+                                } label: {
+                                    Text(filter.title(for: mediaType))
+                                        .font(.subheadline)
+                                        .fontWeight(selectedFilter == filter ? .semibold : .regular)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            selectedFilter == filter
+                                                ? mediaType.color.opacity(0.2)
+                                                : Color(UIColor.tertiarySystemFill)
+                                        )
+                                        .foregroundColor(selectedFilter == filter ? mediaType.color : .primary)
+                                        .clipShape(Capsule())
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(selectedFilter == filter ? mediaType.color : Color.clear, lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.bouncy(scale: 0.96))
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(mediaType.color.opacity(0.1))
+                .background(mediaType.color.opacity(0.08))
 
                 // Medya grid'i
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(photos) { photo in
-                            MediaPhotoItem(
-                                photo: photo,
-                                mediaType: mediaType,
-                                isSelected: selectedPhotos.contains(photo.id),
-                                onTap: {
-                                    if photo.isFavorite {
-                                        return
-                                    }
-                                    if selectedPhotos.contains(photo.id) {
-                                        selectedPhotos.remove(photo.id)
-                                    } else {
-                                        selectedPhotos.insert(photo.id)
-                                    }
-                                },
-                                onLongPress: {
-                                    // Haptic feedback
-                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                                    impactFeedback.impactOccurred()
-                                    showingFullImage = photo
-                                }
-                            )
-                        }
+                if filteredPhotos.isEmpty {
+                    VStack(spacing: 12) {
+                        Spacer()
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.secondary)
+                        Text(L10n.k("media.filter.empty"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
                     }
-                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(filteredPhotos) { photo in
+                                MediaPhotoItem(
+                                    photo: photo,
+                                    mediaType: mediaType,
+                                    isSelected: selectedPhotos.contains(photo.id),
+                                    onTap: {
+                                        if photo.isFavorite {
+                                            return
+                                        }
+                                        if selectedPhotos.contains(photo.id) {
+                                            selectedPhotos.remove(photo.id)
+                                        } else {
+                                            selectedPhotos.insert(photo.id)
+                                        }
+                                    },
+                                    onLongPress: {
+                                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                        impactFeedback.impactOccurred()
+                                        showingFullImage = photo
+                                    }
+                                )
+                            }
+                        }
+                        .padding()
+                    }
                 }
 
                 // Alt kontroller
@@ -237,7 +323,7 @@ struct MediaPhotoGrid: View {
                     HStack(spacing: 12) {
                         // Tümünü seç/kaldır
                         Button(action: {
-                            let nonFavorites = photos.filter { !$0.isFavorite }
+                            let nonFavorites = filteredPhotos.filter { !$0.isFavorite }
                             if selectedPhotos.count == nonFavorites.count {
                                 selectedPhotos.removeAll()
                             } else {
@@ -245,7 +331,7 @@ struct MediaPhotoGrid: View {
                             }
                         }) {
                             HStack {
-                                let nonFavorites = photos.filter { !$0.isFavorite }
+                                let nonFavorites = filteredPhotos.filter { !$0.isFavorite }
                                 Image(
                                     systemName: selectedPhotos.count == nonFavorites.count
                                         ? "checkmark.circle" : "circle"
@@ -263,10 +349,11 @@ struct MediaPhotoGrid: View {
                             .background(Color.gray.opacity(0.2))
                             .cornerRadius(12)
                         }
+                        .buttonStyle(.bouncy(scale: 0.98))
 
                         // Sil butonu
                         Button(action: {
-                            let photosToDelete = photos.filter { selectedPhotos.contains($0.id) }
+                            let photosToDelete = filteredPhotos.filter { selectedPhotos.contains($0.id) }
                             onDelete(photosToDelete)
                         }) {
                             HStack {
@@ -283,6 +370,7 @@ struct MediaPhotoGrid: View {
                             .foregroundColor(.white)
                             .cornerRadius(12)
                         }
+                        .buttonStyle(.bouncy(scale: 0.98))
                         .disabled(selectedPhotos.isEmpty)
                     }
                     .padding(.horizontal)

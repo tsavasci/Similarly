@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "المساحة الموفرة المقدرة";
 "main.limited_access.banner" = "تم تمكين الوصول المحدود للصور.";
 "main.limited_access.action" = "تحديد المزيد من الصور";
+
+"settings.about.send_feedback" = "إرسال الملاحظات والدعم";
+"settings.about.privacy_policy" = "سياسة الخصوصية";
+"media.filter.all" = "الكل";
+"media.filter.over_100mb" = "> 100 ميجابايت";
+"media.filter.over_500mb" = "> 500 ميجابايت";
+"media.filter.long_video" = "> 1 دقيقة";
+"media.filter.large_files" = "ملفات كبيرة";
+"media.filter.empty" = "لا توجد وسائط تطابق هذا الفلتر";
+"main.audit.title" = "تدقيق التخزين";
+"main.audit.subtitle" = "نظرة عامة على العناصر القابلة للتنظيف";

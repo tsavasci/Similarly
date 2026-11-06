@@ -1,0 +1,4 @@
+/* InfoPlist.strings (es) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "Similarly necesita acceso a tu fototeca para detectar fotos similares y duplicadas.";

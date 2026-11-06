@@ -77,6 +77,48 @@ struct MainView: View {
                                 + similarityManager.duplicateGroups.count
                                 + similarityManager.screenshotGroups.count
                             if totalGroups > 0 {
+                                // Hızlı Depolama Denetimi Hero Butonu
+                                Button {
+                                    DesignSystem.Haptics.impact(.medium)
+                                    showingSimilarPhotos = true
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.green.opacity(0.15))
+                                                .frame(width: 44, height: 44)
+                                            Image(systemName: "sparkles.square.filled.on.square")
+                                                .font(.system(size: 20))
+                                                .foregroundStyle(DesignSystem.Colors.success)
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(L10n.k("main.audit.title"))
+                                                .font(.headline)
+                                                .foregroundStyle(.primary)
+                                            Text(L10n.k("main.audit.subtitle"))
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.forward")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card, style: .continuous)
+                                            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+                                }
+                                .buttonStyle(.bouncy(scale: 0.98))
+
                                 StatCard(
                                     icon: "square.on.square",
                                     title: L10n.t("main.stats.similar_groups"),
@@ -158,6 +200,7 @@ struct MainView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(15)
                             }
+                            .buttonStyle(.bouncy(scale: 0.98))
                             .disabled(photoManager.isProcessing)
                         } else {
                             // Analiz butonu
@@ -190,6 +233,7 @@ struct MainView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(15)
                             }
+                            .buttonStyle(.bouncy(scale: 0.98))
                             .disabled(similarityManager.isAnalyzing)
 
                             // Yeniden yükle butonu
@@ -209,6 +253,7 @@ struct MainView: View {
                                 .foregroundColor(.primary)
                                 .cornerRadius(15)
                             }
+                            .buttonStyle(.bouncy(scale: 0.98))
                             .disabled(photoManager.isProcessing)
                         }
                     }

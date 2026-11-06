@@ -30,7 +30,7 @@ struct SimilarlyApp: App {
             try? fileManager.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
         }
 
-        // Configure ModelContainer with proper error handling
+        // Configure ModelContainer with proper error handling and fallback
         let config = ModelConfiguration(isStoredInMemoryOnly: false)
         do {
             self.modelContainer = try ModelContainer(for: ProcessedPhoto.self, configurations: config)
@@ -43,7 +43,13 @@ struct SimilarlyApp: App {
             do {
                 self.modelContainer = try ModelContainer(for: ProcessedPhoto.self, configurations: config)
             } catch {
-                fatalError("Could not initialize ModelContainer: \(error)")
+                // Disk kurtarılamazsa bellek içi (in-memory) kapsayıcıya düşerek uygulamanın çökmesini engelle
+                let memoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                if let memoryContainer = try? ModelContainer(for: ProcessedPhoto.self, configurations: memoryConfig) {
+                    self.modelContainer = memoryContainer
+                } else {
+                    fatalError("Critical: Could not initialize ModelContainer: \(error)")
+                }
             }
         }
     }

@@ -755,5 +755,377 @@ const translations = {
       p5: "إذا كانت لديك أي استفسارات حول سياسة الخصوصية، يسعدنا تواصلك معنا عبر support@similarly.app.",
       backHome: "العودة للرئيسية"
     }
+  },
+  it: {
+    dir: "ltr",
+    langName: "Italiano",
+    flag: "🇮🇹",
+    nav: {
+      features: "Funzionalità",
+      faq: "FAQ",
+      privacy: "Privacy",
+      download: "Scarica"
+    },
+    hero: {
+      badge: "✨ Pulizia Foto con IA sul Dispositivo",
+      title1: "Elimina il superfluo,",
+      titleGradient: "Conserva i ricordi migliori",
+      subtitle: "Similarly rileva foto simili, scatti a raffica e immagini sfocate con l'IA on-device di Apple Vision. Recupera gigabyte su iPhone in pochi secondi.",
+      explore: "Scopri le funzioni",
+      statsAccuracy: "99% Precisione",
+      statsSpeed: "10x Più veloce",
+      statsPrivacy: "100% Locale",
+      statsStorage: "Gigabyte risparmiati"
+    },
+    stats: {
+      item1Val: "100%",
+      item1Lbl: "Privato & Sul Dispositivo",
+      item2Val: "0 MB",
+      item2Lbl: "Dati Cloud Inviati",
+      item3Val: "10x",
+      item3Lbl: "Più Veloce con Vision AI",
+      item4Val: "∞",
+      item4Lbl: "Foto Supportate"
+    },
+    features: {
+      badge: "Funzionalità",
+      title: "Perché scegliere Similarly?",
+      subtitle: "Il modo più veloce, sicuro e intelligente per organizzare il tuo rullino.",
+      f1Title: "Rilevamento Foto Simili",
+      f1Desc: "Raggruppa all'istante scatti a raffica e pose simili. Mantiene lo scatto più nitido ed elimina il resto.",
+      f2Title: "Eliminazione Duplicati Esatti",
+      f2Desc: "Trova copie identiche e download ripetuti per liberare memoria all'istante.",
+      f3Title: "Foto Sfocate e a Bassa Qualità",
+      f3Desc: "Rileva automaticamente scatti fuori fuoco, troppo scuri o sovraesposti.",
+      f4Title: "Stima Spazio Risparmiato",
+      f4Desc: "Calcola con esattezza quanti megabyte e gigabyte puoi liberare prima di eliminare.",
+      f5Title: "100% Privacy sul Dispositivo",
+      f5Desc: "Basato su Apple Vision. Tutte le analisi restano locali sul tuo iPhone senza server remoti.",
+      f6Title: "Eliminazione Sicura con PhotoKit",
+      f6Desc: "Usa le API native Apple: le foto eliminate vanno in 'Eliminati di recente' per 30 giorni."
+    },
+    faq: {
+      badge: "FAQ",
+      title: "Domande Frequenti",
+      subtitle: "Tutto quello che c'è da sapere su Similarly.",
+      q1: "Le mie foto vengono caricate su server esterni?",
+      a1: "Mai. Similarly funziona al 100% in locale su iPhone con Neural Engine e Apple Vision. Nessun dato lascia il telefono.",
+      q2: "Posso recuperare le foto eliminate per errore?",
+      a2: "Certamente! Le foto rimosse finiscono nell'album 'Eliminati di recente' di iOS e sono recuperabili per 30 giorni.",
+      q3: "L'app richiede una connessione internet?",
+      a3: "No, Similarly funziona completamente offline anche in modalità aereo.",
+      q4: "Come vengono riconosciute le foto simili?",
+      a4: "Similarly impiega l'analisi vettoriale FeaturePrint di Vision, analizzando composizione, trame e dettagli."
+    },
+    cta: {
+      title: "Pronto a liberare il tuo rullino?",
+      subtitle: "Scarica gratis Similarly oggi e recupera prezioso spazio su iPhone in pochi minuti.",
+      button: "Scarica su App Store"
+    },
+    footer: {
+      desc: "Il pulitore intelligente per foto simili e duplicate su iOS con privacy assoluta. Made with ❤️ in Turkey.",
+      product: "Prodotto",
+      legal: "Note legali",
+      privacy: "Informativa sulla privacy",
+      terms: "Termini di servizio",
+      rights: "© 2025 Similarly. Tutti i diritti riservati."
+    },
+    privacyPage: {
+      title: "Informativa sulla Privacy",
+      subtitle: "La tua privacy e la sicurezza delle tue foto sono la nostra priorità assoluta",
+      lastUpdated: "Ultimo aggiornamento: Ottobre 2025",
+      intro: "La presente informativa descrive il nostro impegno nella protezione dei tuoi dati durante l'uso di Similarly su iOS. L'app è progettata per operare al 100% sul tuo dispositivo.",
+      boxHighlight: "🛡️ Principio fondamentale: Tutto l'elaborazione delle foto avviene esclusivamente all'interno del tuo iPhone. Nessun file o metadato viene mai inviato all'esterno.",
+      h1: "1. Accesso ai dati",
+      p1: "Richiediamo l'accesso alla libreria foto solo per confrontare e raggruppare immagini simili localmente. Non raccogliamo, trasmettiamo né memorizziamo dati su server remoti.",
+      h2: "2. Elaborazione locale delle immagini",
+      p2: "L'analisi visiva utilizza Apple Vision e il chip neurale del dispositivo. Le informazioni temporanee risiedono nel database locale protetto del telefono.",
+      h3: "3. Nessun tracciamento o pubblicità",
+      p3: "Similarly non integra SDK pubblicitari né strumenti di tracciamento di terze parti. Non profiliamo né monitoriamo la tua attività.",
+      h4: "4. Eliminazione sicura e diritti dell'utente",
+      p4: "L'eliminazione avviene tramite le API ufficiali PhotoKit previo consenso del sistema. Gli scatti eliminati sono recuperabili per 30 giorni nell'album 'Eliminati di recente'.",
+      h5: "5. Contatti",
+      p5: "Per qualsiasi domanda in merito alla privacy, puoi scriverci a support@similarly.app.",
+      backHome: "Torna alla Home"
+    }
+  },
+  pt: {
+    dir: "ltr",
+    langName: "Português",
+    flag: "🇧🇷",
+    nav: {
+      features: "Recursos",
+      faq: "Perguntas",
+      privacy: "Privacidade",
+      download: "Baixar"
+    },
+    hero: {
+      badge: "✨ Limpador de Fotos com IA no Dispositivo",
+      title1: "Livre-se da bagunça,",
+      titleGradient: "Guarde as melhores memórias",
+      subtitle: "O Similarly detecta fotos semelhantes, fotos em sequência e imagens desfocadas com a IA do Apple Vision. Recupere gigabytes no seu iPhone em segundos.",
+      explore: "Explorar Recursos",
+      statsAccuracy: "99% Precisão",
+      statsSpeed: "10x Mais Rápido",
+      statsPrivacy: "100% No Aparelho",
+      statsStorage: "Gigabytes Salvos"
+    },
+    stats: {
+      item1Val: "100%",
+      item1Lbl: "Privado & No Aparelho",
+      item2Val: "0 MB",
+      item2Lbl: "Dados Enviados à Nuvem",
+      item3Val: "10x",
+      item3Lbl: "Mais Rápido com Vision AI",
+      item4Val: "∞",
+      item4Lbl: "Fotos Suportadas"
+    },
+    features: {
+      badge: "Recursos",
+      title: "Por que escolher o Similarly?",
+      subtitle: "A forma mais rápida, segura e inteligente de organizar sua fototeca do iPhone.",
+      f1Title: "Detecção de Fotos Semelhantes",
+      f1Desc: "Agrupa fotos em sequência e poses semelhantes num instante. Mantém a mais nítida e apaga o resto.",
+      f2Title: "Removedor de Duplicadas Exatas",
+      f2Desc: "Encontra cópias idênticas e downloads repetidos para liberar memória imediatamente.",
+      f3Title: "Fotos Desfocadas e com Pouca Qualidade",
+      f3Desc: "Detecta fotos fora de foco, escuras demais ou com excesso de luz automaticamente.",
+      f4Title: "Cálculo de Economia em Tempo Real",
+      f4Desc: "Mostra a quantidade exata de megabytes e gigabytes que você pode recuperar com segurança.",
+      f5Title: "100% de Privacidade no Dispositivo",
+      f5Desc: "Desenvolvido com Apple Vision. Todo o processamento fica no seu iPhone, sem servidores remotos.",
+      f6Title: "Exclusão Segura com PhotoKit",
+      f6Desc: "Usa o PhotoKit oficial da Apple: as fotos vão para o álbum 'Apagados Recentemente' por 30 dias."
+    },
+    faq: {
+      badge: "Perguntas Frequentes",
+      title: "Perguntas Frequentes",
+      subtitle: "Tudo o que você precisa saber sobre o Similarly.",
+      q1: "Minhas fotos são enviadas para algum servidor?",
+      a1: "Nunca. O Similarly opera 100% no seu iPhone utilizando o Neural Engine e o Apple Vision. Nenhuma imagem deixa o aparelho.",
+      q2: "Posso recuperar fotos apagadas por engano?",
+      a2: "Sim! As fotos apagadas vão para o álbum padrão 'Apagados Recentemente' do iOS e podem ser restauradas em até 30 dias.",
+      q3: "O aplicativo precisa de internet?",
+      a3: "Não, o Similarly funciona totalmente offline e até em Modo Avião.",
+      q4: "Como o app detecta fotos semelhantes?",
+      a4: "O Similarly usa a análise vetorial FeaturePrint da Apple Vision, comparando composição, texturas e padrões visuais."
+    },
+    cta: {
+      title: "Pronto para organizar sua fototeca?",
+      subtitle: "Baixe o Similarly gratuitamente hoje e recupere gigabytes de espaço valioso no seu iPhone.",
+      button: "Baixar na App Store"
+    },
+    footer: {
+      desc: "O limpador inteligente de fotos semelhantes e duplicadas para iOS com total privacidade. Made with ❤️ in Turkey.",
+      product: "Produto",
+      legal: "Legal",
+      privacy: "Política de Privacidade",
+      terms: "Termos de Uso",
+      rights: "© 2025 Similarly. Todos os direitos reservados."
+    },
+    privacyPage: {
+      title: "Política de Privacidade",
+      subtitle: "Sua privacidade e a segurança das suas memórias são nossa prioridade máxima",
+      lastUpdated: "Última atualização: Outubro de 2025",
+      intro: "Esta política descreve nosso compromisso de proteger seus dados ao usar o Similarly no iOS. O app foi planejado para rodar 100% localmente no seu aparelho.",
+      boxHighlight: "🛡️ Princípio fundamental: Todo o processamento de imagens ocorre exclusivamente no seu iPhone. Suas fotos nunca saem do seu celular.",
+      h1: "1. Dados acessados",
+      p1: "Pedimos acesso à fototeca apenas para comparar e agrupar fotos semelhantes localmente. Não coletamos, transmitimos nem armazenamos dados em servidores externos.",
+      h2: "2. Processamento local no dispositivo",
+      p2: "A análise utiliza o Apple Vision e o hardware de aprendizado de máquina do seu iPhone. Dados temporários ficam no banco de dados local seguro do aparelho.",
+      h3: "3. Sem rastreamento ou anúncios",
+      p3: "O Similarly não inclui anúncios nem ferramentas de rastreamento de terceiros. Sua privacidade é respeitada na íntegra.",
+      h4: "4. Exclusão segura e direitos do usuário",
+      p4: "A exclusão ocorre via PhotoKit oficial com confirmação do sistema. As fotos vão para o álbum 'Apagados Recentemente' e podem ser recuperadas por 30 dias.",
+      h5: "5. Fale conosco",
+      p5: "Dúvidas sobre nossa política de privacidade? Entre em contato pelo e-mail support@similarly.app.",
+      backHome: "Voltar para o Início"
+    }
+  },
+  ko: {
+    dir: "ltr",
+    langName: "한국어",
+    flag: "🇰🇷",
+    nav: {
+      features: "기능",
+      faq: "자주 묻는 질문",
+      privacy: "개인정보 처리방침",
+      download: "다운로드"
+    },
+    hero: {
+      badge: "✨ 온디바이스 AI 사진 정리기",
+      title1: "불필요한 사진은 지우고,",
+      titleGradient: "소중한 추억만 간직하세요",
+      subtitle: "Similarly는 Apple Vision 온디바이스 AI로 유사한 연사, 중복 사진, 흐린 사진을 감지합니다. 몇 초 만에 아이폰 저장 공간을 확보하세요.",
+      explore: "기능 둘러보기",
+      statsAccuracy: "99% 정확도",
+      statsSpeed: "10배 빠름",
+      statsPrivacy: "100% 온디바이스",
+      statsStorage: "기가바이트 절약"
+    },
+    stats: {
+      item1Val: "100%",
+      item1Lbl: "완전한 온디바이스 프라이버시",
+      item2Val: "0 MB",
+      item2Lbl: "클라우드 전송 데이터",
+      item3Val: "10x",
+      item3Lbl: "Vision AI로 빠른 속도",
+      item4Val: "∞",
+      item4Lbl: "무제한 사진 분석"
+    },
+    features: {
+      badge: "주요 기능",
+      title: "왜 Similarly인가요?",
+      subtitle: "아이폰 사진 보관함을 가장 빠르고 안전하며 스마트하게 정리하는 방법입니다.",
+      f1Title: "유사 사진 자동 감지",
+      f1Desc: "연속 촬영과 유사한 각도의 사진을 자동 그룹화합니다. 가장 선명한 사진을 남기고 나머지를 원탭으로 정리합니다.",
+      f2Title: "완벽한 중복 사진 제거",
+      f2Desc: "동일한 파일 복사본과 반복 다운로드된 이미지를 찾아 저장 공간을 즉시 확보합니다.",
+      f3Title: "흔들림 및 저품질 사진 검색",
+      f3Desc: "초점이 나간 흐린 사진, 너무 어둡거나 노출 과다로 손상된 사진을 자동 감지합니다.",
+      f4Title: "실시간 절약 공간 계산",
+      f4Desc: "삭제하기 전에 확보할 수 있는 정확한 메가바이트와 기가바이트를 계산해 보여줍니다.",
+      f5Title: "100% 온디바이스 프라이버시",
+      f5Desc: "Apple Vision 프레임워크 기반. 모든 처리는 아이폰 로컬에서 진행되며 서버 업로드가 없습니다.",
+      f6Title: "PhotoKit 안전 삭제",
+      f6Desc: "Apple 공식 PhotoKit을 사용하여 사진이 '최근 삭제된 항목'으로 이동해 30일간 복구 가능합니다."
+    },
+    faq: {
+      badge: "FAQ",
+      title: "자주 묻는 질문",
+      subtitle: "Similarly에 대해 궁금한 모든 것.",
+      q1: "내 사진이 외부 서버로 업로드되나요?",
+      a1: "절대 아닙니다. Similarly는 Apple의 Neural Engine과 Vision 프레임워크를 이용해 100% 기기 내에서 실행됩니다.",
+      q2: "실수로 삭제한 사진을 복구할 수 있나요?",
+      a2: "네! 삭제된 사진은 사진 앱의 표준 '최근 삭제된 항목' 앨범으로 이동하며 30일 이내에 언제든 복구할 수 있습니다.",
+      q3: "인터넷 연결이 필요한가요?",
+      a3: "아닙니다. Similarly는 오프라인과 비행기 탑승 모드에서도 완벽하게 작동합니다.",
+      q4: "유사 사진은 어떻게 감지하나요?",
+      a4: "Similarly는 단순 파일 해시가 아닌 시각적 패턴, 질감, 구도를 인식하는 Apple Vision FeaturePrint 벡터 분석을 사용합니다."
+    },
+    cta: {
+      title: "사진 보관함을 정리할 준비가 되셨나요?",
+      subtitle: "지금 무료로 Similarly를 다운로드하고 몇 분 만에 소중한 아이폰 저장 공간을 확보하세요.",
+      button: "App Store에서 다운로드"
+    },
+    footer: {
+      desc: "완벽한 프라이버시를 보장하는 스마트한 iOS 유사·중복 사진 정리 앱. Made with ❤️ in Turkey.",
+      product: "제품",
+      legal: "법적 고지",
+      privacy: "개인정보 처리방침",
+      terms: "이용 약관",
+      rights: "© 2025 Similarly. All rights reserved."
+    },
+    privacyPage: {
+      title: "개인정보 처리방침",
+      subtitle: "사용자의 프라이버시와 소중한 추억의 보안은 우리의 최우선 가치입니다",
+      lastUpdated: "최종 수정일: 2025년 10월",
+      intro: "본 방침은 iOS용 Similarly 앱 사용 시 사용자 데이터를 보호하기 위한 약속을 안내합니다. 본 앱은 100% 온디바이스로 작동하도록 설계되었습니다.",
+      boxHighlight: "🛡️ 기본 원칙: 모든 사진 처리 및 분석은 전적으로 사용자의 아이폰 내부에서 수행됩니다. 사진은 기기 밖으로 절대 전송되지 않습니다.",
+      h1: "1. 접근하는 정보",
+      p1: "기기 내에서 유사 및 중복 사진을 비교하고 그룹화하기 위해서만 사진 보관함 접근 권한을 요청합니다. 어떠한 데이터도 외부 서버에 수집하거나 전송하지 않습니다.",
+      h2: "2. 온디바이스 이미지 처리",
+      p2: "이미지 분석은 Apple Vision과 기기의 머신러닝 프로세서를 통해 로컬에서 직접 처리됩니다. 임시 데이터는 기기 내부 데이터베이스에 안전하게 보관됩니다.",
+      h3: "3. 제3자 추적 및 광고 없음",
+      p3: "Similarly에는 광고 네트워크나 제3자 추적 도구가 일절 포함되어 있지 않습니다. 사용자의 활동을 모니터링하지 않습니다.",
+      h4: "4. 안전한 삭제 및 사용자 권리",
+      p4: "삭제는 시스템 확인을 거치는 Apple 공식 PhotoKit API를 통해 이루어집니다. 삭제된 사진은 '최근 삭제된 항목'에 30일간 보관되어 안전하게 복구할 수 있습니다.",
+      h5: "5. 문의처",
+      p5: "개인정보 처리방침에 관한 문의는 support@similarly.app으로 연락 주시기 바랍니다.",
+      backHome: "홈으로 돌아가기"
+    }
+  },
+  ru: {
+    dir: "ltr",
+    langName: "Русский",
+    flag: "🇷🇺",
+    nav: {
+      features: "Возможности",
+      faq: "FAQ",
+      privacy: "Конфиденциальность",
+      download: "Скачать"
+    },
+    hero: {
+      badge: "✨ Локальный ИИ для очистки фото",
+      title1: "Уберите лишнее,",
+      titleGradient: "Сохраните лучшие моменты",
+      subtitle: "Similarly находит похожие серии снимков, дубликаты и размытые фото с локальным ИИ Apple Vision. Освободите гигабайты памяти iPhone за считанные секунды.",
+      explore: "Узнать больше",
+      statsAccuracy: "99% Точность",
+      statsSpeed: "10x Быстрее",
+      statsPrivacy: "100% Локально",
+      statsStorage: "Гигабайты сохранены"
+    },
+    stats: {
+      item1Val: "100%",
+      item1Lbl: "Локально на устройстве",
+      item2Val: "0 МБ",
+      item2Lbl: "Данных отправлено в облако",
+      item3Val: "10x",
+      item3Lbl: "Быстрее благодаря Vision AI",
+      item4Val: "∞",
+      item4Lbl: "Фото поддерживается"
+    },
+    features: {
+      badge: "Функции",
+      title: "Почему именно Similarly?",
+      subtitle: "Самый быстрый, безопасный и умный способ навести порядок в медиатеке iPhone.",
+      f1Title: "Поиск похожих фото",
+      f1Desc: "Мгновенно группирует серийные кадры и похожие позы. Оставляет самый четкий снимок и удаляет неудачные.",
+      f2Title: "Удаление точных дубликатов",
+      f2Desc: "Находит одинаковые копии и повторные загрузки для быстрого освобождения памяти.",
+      f3Title: "Поиск размытых и темных фото",
+      f3Desc: "Автоматически определяет смазанные, слишком темные или засвеченные кадры.",
+      f4Title: "Оценка освобождаемого места",
+      f4Desc: "Точно рассчитывает объем памяти, который можно безопасно освободить перед удалением.",
+      f5Title: "100% Конфиденциальность на iPhone",
+      f5Desc: "Работает на базе Apple Vision. Вся обработка происходит прямо на устройстве без облачных серверов.",
+      f6Title: "Безопасное удаление через PhotoKit",
+      f6Desc: "Использует официальный PhotoKit: удаленные снимки попадают в 'Недавно удаленные' на 30 дней."
+    },
+    faq: {
+      badge: "FAQ",
+      title: "Часто задаваемые вопросы",
+      subtitle: "Все, что нужно знать о приложении Similarly.",
+      q1: "Отправляются ли мои фото на внешние серверы?",
+      a1: "Никогда. Similarly работает на 100% локально на вашем iPhone с помощью Apple Neural Engine и Vision. Ваши фото не покидают телефон.",
+      q2: "Можно ли восстановить случайно удаленные фото?",
+      a2: "Да! Удаленные фото перемещаются в стандартный альбом 'Недавно удаленные' в приложении Фото, где доступны еще 30 дней.",
+      q3: "Требуется ли подключение к интернету?",
+      a3: "Нет, Similarly полностью автономно работает даже в Авиарежиме.",
+      q4: "Как приложение находит похожие снимки?",
+      a4: "Similarly использует векторный анализ FeaturePrint в Apple Vision, сопоставляя композицию, текстуры и визуальные образы."
+    },
+    cta: {
+      title: "Готовы навести порядок в фотопленке?",
+      subtitle: "Скачайте Similarly бесплатно прямо сейчас и освободите драгоценные гигабайты на iPhone.",
+      button: "Скачать в App Store"
+    },
+    footer: {
+      desc: "Умный и безопасный инструмент очистки похожих и повторяющихся фото на iOS. Made with ❤️ in Turkey.",
+      product: "Продукт",
+      legal: "Правовая информация",
+      privacy: "Политика конфиденциальности",
+      terms: "Условия использования",
+      rights: "© 2025 Similarly. Все права защищены."
+    },
+    privacyPage: {
+      title: "Политика конфиденциальности",
+      subtitle: "Ваша конфиденциальность и безопасность ваших снимков — наш главный приоритет",
+      lastUpdated: "Последнее обновление: октябрь 2025",
+      intro: "Настоящая политика описывает наши обязательства по защите ваших данных в приложении Similarly на iOS. Приложение разработано для 100% автономной работы на вашем устройстве.",
+      boxHighlight: "🛡️ Главный принцип: вся обработка и анализ изображений выполняются исключительно внутри вашего iPhone. Ваши фото никогда не передаются наружу.",
+      h1: "1. Доступ к данным",
+      p1: "Мы запрашиваем доступ к медиатеке только для локального сравнения и группировки похожих кадров. Мы не собираем и не передаем данные на удаленные серверы.",
+      h2: "2. Локальная обработка изображений",
+      p2: "Анализ осуществляется с помощью Apple Vision и процессора машинного обучения прямо на iPhone. Временные данные хранятся в защищенной локальной базе устройства.",
+      h3: "3. Отсутствие рекламы и слежки",
+      p3: "Similarly не содержит рекламных сетей или сторонних трекеров. Мы не профилируем и не отслеживаем пользователей.",
+      h4: "4. Безопасное удаление и права пользователя",
+      p4: "Удаление выполняется через официальный API PhotoKit с системным подтверждением. Файлы остаются в альбоме 'Недавно удаленные' в течение 30 дней.",
+      h5: "5. Контакты",
+      p5: "Если у вас есть вопросы по политике конфиденциальности, свяжитесь с нами по адресу support@similarly.app.",
+      backHome: "На главную"
+    }
   }
 };

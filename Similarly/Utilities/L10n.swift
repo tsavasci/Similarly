@@ -12,7 +12,7 @@ enum L10n {
     private static let languagePreferenceKey = "appLanguage"
 
     private static let supportedLanguages: [String] = [
-        "en", "tr", "ar", "zh-Hans", "es", "fr", "de", "ja",
+        "en", "tr", "ar", "zh-Hans", "es", "fr", "de", "ja", "it", "pt-BR", "ko", "ru",
     ]
 
     static func resolvedLanguageCode(for preference: String) -> String {
@@ -57,6 +57,10 @@ enum L10n {
         if normalized.hasPrefix("fr") { return "fr" }
         if normalized.hasPrefix("de") { return "de" }
         if normalized.hasPrefix("ja") { return "ja" }
+        if normalized.hasPrefix("it") { return "it" }
+        if normalized.hasPrefix("pt") { return "pt-BR" }
+        if normalized.hasPrefix("ko") { return "ko" }
+        if normalized.hasPrefix("ru") { return "ru" }
         if normalized.hasPrefix("en") { return "en" }
 
         return supportedLanguages.contains(identifier) ? identifier : "en"

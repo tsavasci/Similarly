@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "Geschätzte Ersparnis";
 "main.limited_access.banner" = "Eingeschränkter Fotozugriff ist aktiv.";
 "main.limited_access.action" = "Weitere Fotos auswählen";
+
+"settings.about.send_feedback" = "Feedback & Support senden";
+"settings.about.privacy_policy" = "Datenschutzrichtlinie";
+"media.filter.all" = "Alle";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1 Min.";
+"media.filter.large_files" = "Große Dateien";
+"media.filter.empty" = "Keine Medien für diesen Filter gefunden";
+"main.audit.title" = "Speicher-Audit";
+"main.audit.subtitle" = "Sofortige Übersicht bereinigbarer Objekte";

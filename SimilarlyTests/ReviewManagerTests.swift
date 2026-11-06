@@ -63,4 +63,14 @@ final class ReviewManagerTests: XCTestCase {
         let shouldPromptAfterCooldown = manager.shouldRequestReview(recentDeletedCount: 10, recentSavedBytes: 50 * 1024 * 1024, currentDate: thirtyFiveDaysLater)
         XCTAssertTrue(shouldPromptAfterCooldown, "Cooldown tamamlandıktan sonra inceleme istenebilmelidir.")
     }
+
+    @MainActor
+    func testShouldNotPromptTwiceInSameVersion() {
+        let manager = ReviewManager(userDefaults: userDefaults)
+        let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        userDefaults.set(currentVersion, forKey: "review_last_prompted_version")
+
+        let shouldPrompt = manager.shouldRequestReview(recentDeletedCount: 10, recentSavedBytes: 50 * 1024 * 1024)
+        XCTAssertFalse(shouldPrompt, "Aynı sürümde ikinci kez inceleme istenmemelidir.")
+    }
 }

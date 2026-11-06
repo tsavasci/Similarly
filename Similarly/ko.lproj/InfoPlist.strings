@@ -1,0 +1,4 @@
+/* InfoPlist.strings (ko) - Similarly */
+
+CFBundleDisplayName = "Similarly";
+NSPhotoLibraryUsageDescription = "Similarly는 유사한 사진과 중복 사진을 감지하기 위해 사진 보관함 접근 권한이 필요합니다.";

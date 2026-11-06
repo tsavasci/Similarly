@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "Tahmini Tasarruf";
 "main.limited_access.banner" = "Sınırlı fotoğraf erişimi etkin.";
 "main.limited_access.action" = "Daha Fazla Fotoğraf Seç";
+
+"settings.about.send_feedback" = "Geri Bildirim ve Destek";
+"settings.about.privacy_policy" = "Gizlilik Politikası";
+"media.filter.all" = "Tümü";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1 dk";
+"media.filter.large_files" = "Büyükler";
+"media.filter.empty" = "Bu filtreye uygun medya bulunamadı";
+"main.audit.title" = "Depolama Denetimi";
+"main.audit.subtitle" = "Kazanılabilir depolama alanı özeti";

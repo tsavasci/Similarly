@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "预计可节省";
 "main.limited_access.banner" = "已启用部分照片访问权限。";
 "main.limited_access.action" = "选择更多照片";
+
+"settings.about.send_feedback" = "发送反馈与支持";
+"settings.about.privacy_policy" = "隐私政策";
+"media.filter.all" = "全部";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1分钟";
+"media.filter.large_files" = "大文件";
+"media.filter.empty" = "没有符合此条件的媒体";
+"main.audit.title" = "存储审计";
+"main.audit.subtitle" = "可清理项目的即时概览";

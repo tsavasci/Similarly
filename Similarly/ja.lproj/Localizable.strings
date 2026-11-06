@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "節約可能な容量";
 "main.limited_access.banner" = "写真へのアクセスが制限されています。";
 "main.limited_access.action" = "さらに写真を選択";
+
+"settings.about.send_feedback" = "フィードバックとサポート";
+"settings.about.privacy_policy" = "プライバシーポリシー";
+"media.filter.all" = "すべて";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1分";
+"media.filter.large_files" = "大容量ファイル";
+"media.filter.empty" = "この条件に一致するメディアはありません";
+"main.audit.title" = "ストレージ診断";
+"main.audit.subtitle" = "削除可能な項目の概要";

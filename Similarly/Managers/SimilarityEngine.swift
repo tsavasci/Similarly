@@ -123,7 +123,7 @@ nonisolated enum SimilarityEngine {
         // 1. Tarihli fotoğraflar: tarihe göre sırala, kayan zaman penceresiyle aday çiftleri üret.
         let dated = items.indices
             .filter { items[$0].0.creationDate != nil }
-            .sorted { items[$0].0.creationDate! < items[$1].0.creationDate! }
+            .sorted { (items[$0].0.creationDate ?? .distantPast) < (items[$1].0.creationDate ?? .distantPast) }
         let maxWindow = max(settings.dateThresholdSeconds, sameSizeTimeWindow, locationTimeWindow)
 
         let totalWork = Double(max(1, items.count))

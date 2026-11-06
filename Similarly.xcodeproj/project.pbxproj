@@ -163,6 +163,10 @@
 				fr,
 				de,
 				ja,
+				ru,
+				it,
+				"pt-BR",
+				ko,
 			);
 			mainGroup = F208C6382E9D2A3F000551CD;
 			minimizedProjectReferenceProxies = 1;
@@ -358,8 +362,8 @@
 				INFOPLIST_FILE = Similarly/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Similarly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Similarly, düzenlenmiş fotoğrafları kaydetmek için kütüphanenize erişmek istiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Similarly, benzer fotoğrafları bulmak için fotoğraf kütüphanenize erişmek istiyor.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Similarly needs access to save edited photos to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Similarly needs access to your photo library to detect similar and duplicate photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -399,8 +403,8 @@
 				INFOPLIST_FILE = Similarly/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Similarly;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Similarly, düzenlenmiş fotoğrafları kaydetmek için kütüphanenize erişmek istiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Similarly, benzer fotoğrafları bulmak için fotoğraf kütüphanenize erişmek istiyor.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Similarly needs access to save edited photos to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Similarly needs access to your photo library to detect similar and duplicate photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -4,6 +4,7 @@
 //
 //  Kullanıcı fotoğraf sildikten sonra ne kadar depolama alanı kazandığını ve
 //  başarısını gösteren tatmin edici kutlama ve paylaşım görünümü.
+//  Emil Kowalski akıcı mikro animasyonlar ve fiziksel yay geçişleri ile modernize edilmiştir.
 //
 
 import SwiftUI
@@ -13,7 +14,10 @@ struct CleanCelebrationView: View {
     let savedBytes: Int64
     let onDismiss: () -> Void
 
-    @State private var animateContent = false
+    @State private var showIcon = false
+    @State private var showText = false
+    @State private var showStats = false
+    @State private var showButtons = false
     @State private var showingShareSheet = false
 
     private var formattedSavedSpace: String {
@@ -28,19 +32,19 @@ struct CleanCelebrationView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // İkon & Efekt
+            // İkon & Efekt (Emil Kowalski: Doğal yaylı giriş ve mikroskobik ölçek)
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [.green.opacity(0.2), .blue.opacity(0.1)],
+                            colors: [Color.green.opacity(0.18), Color.blue.opacity(0.10)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 140, height: 140)
-                    .scaleEffect(animateContent ? 1.05 : 0.95)
-                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateContent)
+                    .scaleEffect(showIcon ? 1.0 : 0.92)
+                    .opacity(showIcon ? 1.0 : 0.0)
 
                 Image(systemName: "sparkles")
                     .font(.system(size: 60))
@@ -51,33 +55,39 @@ struct CleanCelebrationView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .scaleEffect(animateContent ? 1.0 : 0.8)
+                    .scaleEffect(showIcon ? 1.0 : 0.88)
+                    .rotationEffect(.degrees(showIcon ? 0 : -8))
+                    .opacity(showIcon ? 1.0 : 0.0)
             }
             .padding(.bottom, 8)
 
-            // Başlık & Açıklama
+            // Başlık & Açıklama (Kademeli yumuşak yükseliş)
             VStack(spacing: 8) {
                 Text(L10n.k("celebration.title"))
                     .font(.system(size: 28, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .foregroundStyle(.primary)
 
                 Text(L10n.f("celebration.subtitle", deletedCount))
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+            .offset(y: showText ? 0 : 12)
+            .opacity(showText ? 1.0 : 0.0)
 
-            // Tasarruf Kartı
+            // Tasarruf Kartı (Kademeli fiziksel yay geçişi)
             VStack(spacing: 12) {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.k("celebration.storage_freed"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text(formattedSavedSpace)
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(.green)
+                            .foregroundStyle(DesignSystem.Colors.success)
+                            .contentTransition(.numericText())
                     }
 
                     Spacer()
@@ -90,28 +100,33 @@ struct CleanCelebrationView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.k("celebration.photos_cleaned"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Text("\(deletedCount)")
                             .font(.title2)
                             .fontWeight(.bold)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
+                            .contentTransition(.numericText())
                     }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
-                .background(Color.gray.opacity(0.08))
-                .cornerRadius(16)
+                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card, style: .continuous))
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
             }
             .padding(.horizontal)
+            .offset(y: showStats ? 0 : 16)
+            .opacity(showStats ? 1.0 : 0.0)
 
             Spacer()
 
-            // Butonlar
+            // Butonlar (Dokunsal yay tepkili butonlar)
             VStack(spacing: 12) {
                 // Paylaş Butonu (Organik Growth)
-                Button(action: {
+                Button {
+                    DesignSystem.Haptics.impact(.light)
                     showingShareSheet = true
-                }) {
+                } label: {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
                         Text(L10n.k("celebration.share_button"))
@@ -120,36 +135,55 @@ struct CleanCelebrationView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue.opacity(0.12))
-                    .foregroundColor(.blue)
-                    .cornerRadius(14)
+                    .foregroundStyle(.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
                 }
+                .buttonStyle(.bouncy(scale: 0.97))
 
                 // Tamam Butonu
-                Button(action: {
+                Button {
+                    DesignSystem.Haptics.impact(.medium)
                     onDismiss()
-                }) {
+                } label: {
                     Text(L10n.k("common.done"))
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .foregroundColor(.white)
-                        .cornerRadius(14)
+                        .background(DesignSystem.Colors.primaryGradient)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button, style: .continuous))
+                        .shadow(color: Color.blue.opacity(0.25), radius: 8, x: 0, y: 4)
                 }
+                .buttonStyle(.bouncy(scale: 0.97))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
+            .offset(y: showButtons ? 0 : 20)
+            .opacity(showButtons ? 1.0 : 0.0)
         }
         .padding()
+        .presentationDetents([.fraction(0.70), .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(DesignSystem.CornerRadius.celebration)
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                animateContent = true
+            // Başarılı işlem haptik geribildirimi
+            DesignSystem.Haptics.notification(.success)
+
+            // Emil Kowalski kademeli mikro animasyon orkestrasyonu
+            withAnimation(DesignSystem.Springs.bouncy) {
+                showIcon = true
+            }
+
+            withAnimation(DesignSystem.Springs.settle.delay(0.08)) {
+                showText = true
+            }
+
+            withAnimation(DesignSystem.Springs.settle.delay(0.16)) {
+                showStats = true
+            }
+
+            withAnimation(DesignSystem.Springs.interactive.delay(0.24)) {
+                showButtons = true
             }
         }
         .sheet(isPresented: $showingShareSheet) {

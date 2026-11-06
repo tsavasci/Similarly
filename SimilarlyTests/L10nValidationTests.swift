@@ -19,6 +19,10 @@ final class L10nValidationTests: XCTestCase {
         XCTAssertEqual(L10n.resolvedLanguageCode(for: "es"), "es")
         XCTAssertEqual(L10n.resolvedLanguageCode(for: "fr"), "fr")
         XCTAssertEqual(L10n.resolvedLanguageCode(for: "ja"), "ja")
+        XCTAssertEqual(L10n.resolvedLanguageCode(for: "it"), "it")
+        XCTAssertEqual(L10n.resolvedLanguageCode(for: "pt-BR"), "pt-BR")
+        XCTAssertEqual(L10n.resolvedLanguageCode(for: "ko"), "ko")
+        XCTAssertEqual(L10n.resolvedLanguageCode(for: "ru"), "ru")
         XCTAssertEqual(L10n.resolvedLanguageCode(for: "unknown-code"), "en")
     }
 
@@ -51,7 +55,10 @@ final class L10nValidationTests: XCTestCase {
             "common.similar",
             "common.clear_all",
             "common.select_all",
-            "common.oldest"
+            "common.oldest",
+            "main.audit.title",
+            "media.filter.all",
+            "settings.about.send_feedback"
         ]
 
         for key in keys {

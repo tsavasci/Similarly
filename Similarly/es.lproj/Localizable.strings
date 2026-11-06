@@ -188,3 +188,14 @@
 "main.stats.potential_savings" = "Ahorro Estimado";
 "main.limited_access.banner" = "El acceso limitado a fotos está activo.";
 "main.limited_access.action" = "Seleccionar más fotos";
+
+"settings.about.send_feedback" = "Enviar comentarios y soporte";
+"settings.about.privacy_policy" = "Política de privacidad";
+"media.filter.all" = "Todos";
+"media.filter.over_100mb" = "> 100 MB";
+"media.filter.over_500mb" = "> 500 MB";
+"media.filter.long_video" = "> 1 min";
+"media.filter.large_files" = "Archivos grandes";
+"media.filter.empty" = "No se encontraron archivos con este filtro";
+"main.audit.title" = "Auditoría de espacio";
+"main.audit.subtitle" = "Resumen de elementos que se pueden limpiar";
