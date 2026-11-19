@@ -16,6 +16,7 @@ struct SimilarPhotosListView: View {
     @State private var visibleDuplicateCount = 50  // Initial visible count for pagination
     @State private var visibleScreenshotCount = 50
     @State private var visibleSimilarCount = 50
+    @ScaledMetric(relativeTo: .largeTitle) private var emptyIconSize: CGFloat = 80
 
     var body: some View {
         ZStack {
@@ -26,8 +27,11 @@ struct SimilarPhotosListView: View {
                 let analysisUnavailable = similarityManager.isAnalysisUnavailable
                 VStack(spacing: 20) {
                     Image(systemName: analysisUnavailable ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(analysisUnavailable ? .orange : .green)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: emptyIconSize, height: emptyIconSize)
+                        .foregroundStyle(analysisUnavailable ? .orange : .green)
+                        .accessibilityHidden(true)
 
                     Text(L10n.k(analysisUnavailable ? "similar.analysis_failed.title" : "similar.empty.title"))
                         .font(.title)
@@ -35,7 +39,7 @@ struct SimilarPhotosListView: View {
 
                     Text(L10n.k(analysisUnavailable ? "similar.analysis_failed.message" : "similar.empty.message"))
                         .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .padding()
             } else {
@@ -49,7 +53,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Image(systemName: "doc.on.doc.fill")
                                         .accessibilityHidden(true)
-                                        .foregroundColor(.red)
+                                        .foregroundStyle(.red)
                                     Text(L10n.f("similar.summary.duplicate_groups", similarityManager.duplicateGroups.count))
                                         .font(.headline)
                                 }
@@ -60,7 +64,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Image(systemName: "camera.viewfinder")
                                         .accessibilityHidden(true)
-                                        .foregroundColor(.orange)
+                                        .foregroundStyle(.orange)
                                     Text(
                                         L10n.f("similar.summary.screenshot_groups", similarityManager.screenshotGroups.count)
                                     )
@@ -73,7 +77,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Image(systemName: "square.stack.3d.up.fill")
                                         .accessibilityHidden(true)
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(.blue)
                                     Text(L10n.f("similar.summary.similar_groups", similarityManager.similarGroups.count))
                                         .font(.headline)
                                 }
@@ -90,22 +94,22 @@ struct SimilarPhotosListView: View {
                             HStack {
                                 Image(systemName: "photo.stack")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.purple)
+                                    .foregroundStyle(.purple)
                                 Text(L10n.f("similar.summary.total_photos", totalPhotos))
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
 
                             if similarityManager.potentialSavings > 0 {
                                 HStack {
                                     Image(systemName: "internaldrive")
                                         .accessibilityHidden(true)
-                                        .foregroundColor(.green)
+                                        .foregroundStyle(.green)
                                     Text(
                                         L10n.f("similar.summary.savings", formatBytes(similarityManager.potentialSavings))
                                     )
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -120,9 +124,9 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "video.fill")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                                 Text(L10n.k("media.header.title"))
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                             }
                         ) {
                             NavigationLink {
@@ -136,7 +140,7 @@ struct SimilarPhotosListView: View {
                                         HStack {
                                             Image(systemName: "video.fill")
                                                 .accessibilityHidden(true)
-                                                .foregroundColor(.blue)
+                                                .foregroundStyle(.blue)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
                                                     L10n.f("media.videos_count", similarityManager.getTotalVideosCount())
@@ -144,7 +148,7 @@ struct SimilarPhotosListView: View {
                                                 .font(.headline)
                                                 Text(L10n.k("similar.media.videos_cta"))
                                                     .font(.caption2)
-                                                    .foregroundColor(.secondary)
+                                                    .foregroundStyle(.secondary)
                                             }
                                             Spacer()
                                         }
@@ -155,7 +159,7 @@ struct SimilarPhotosListView: View {
                                         HStack {
                                             Image(systemName: "livephoto")
                                                 .accessibilityHidden(true)
-                                                .foregroundColor(.purple)
+                                                .foregroundStyle(.purple)
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(
                                                     L10n.f("media.live_photos_count", similarityManager.getTotalLivePhotosCount())
@@ -163,7 +167,7 @@ struct SimilarPhotosListView: View {
                                                 .font(.headline)
                                                 Text(L10n.k("similar.media.live_cta"))
                                                     .font(.caption2)
-                                                    .foregroundColor(.secondary)
+                                                    .foregroundStyle(.secondary)
                                             }
                                             Spacer()
                                         }
@@ -180,9 +184,9 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(.orange)
                                 Text(L10n.k("quality.nav_title"))
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(.orange)
                             }
                         ) {
                             NavigationLink {
@@ -199,7 +203,7 @@ struct SimilarPhotosListView: View {
                                                     Image(systemName: "eye.slash.fill")
                                                         .accessibilityLabel(L10n.t("quality.type.blurry.title"))
                                                         .font(.caption)
-                                                        .foregroundColor(.orange)
+                                                        .foregroundStyle(.orange)
                                                     Text("\(similarityManager.blurryPhotos.count)")
                                                         .font(.caption)
                                                         .fontWeight(.semibold)
@@ -211,7 +215,7 @@ struct SimilarPhotosListView: View {
                                                     Image(systemName: "moon.fill")
                                                         .accessibilityLabel(L10n.t("quality.type.dark.title"))
                                                         .font(.caption)
-                                                        .foregroundColor(.purple)
+                                                        .foregroundStyle(.purple)
                                                     Text("\(similarityManager.darkPhotos.count)")
                                                         .font(.caption)
                                                         .fontWeight(.semibold)
@@ -223,7 +227,7 @@ struct SimilarPhotosListView: View {
                                                     Image(systemName: "sun.max.fill")
                                                         .accessibilityLabel(L10n.t("quality.type.bright.title"))
                                                         .font(.caption)
-                                                        .foregroundColor(.yellow)
+                                                        .foregroundStyle(.yellow)
                                                     Text("\(similarityManager.brightPhotos.count)")
                                                         .font(.caption)
                                                         .fontWeight(.semibold)
@@ -233,7 +237,7 @@ struct SimilarPhotosListView: View {
 
                                         Text(L10n.k("similar.quality.desc"))
                                             .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(.secondary)
                                     }
 
                                     Spacer()
@@ -249,9 +253,9 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "doc.on.doc.fill")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(.red)
                                 Text(L10n.k("similar.section.duplicates"))
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(.red)
                             }
                         ) {
                             ForEach(Array(similarityManager.duplicateGroups.prefix(visibleDuplicateCount))) { group in
@@ -277,7 +281,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Spacer()
                                     Text(L10n.f("common.loading_count", similarityManager.duplicateGroups.count - visibleDuplicateCount))
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .onAppear {
                                             visibleDuplicateCount = min(visibleDuplicateCount + 25, similarityManager.duplicateGroups.count)
                                         }
@@ -293,9 +297,9 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "camera.viewfinder")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(.orange)
                                 Text(L10n.k("similar.section.screenshots"))
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(.orange)
                             }
                         ) {
                             ForEach(Array(similarityManager.screenshotGroups.prefix(visibleScreenshotCount))) { group in
@@ -320,7 +324,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Spacer()
                                     Text(L10n.f("common.loading_count", similarityManager.screenshotGroups.count - visibleScreenshotCount))
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .onAppear {
                                             visibleScreenshotCount = min(visibleScreenshotCount + 25, similarityManager.screenshotGroups.count)
                                         }
@@ -336,9 +340,9 @@ struct SimilarPhotosListView: View {
                             header: HStack {
                                 Image(systemName: "square.stack.3d.up.fill")
                                     .accessibilityHidden(true)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                                 Text(L10n.k("similar.section.similar_groups"))
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                             }
                         ) {
                             ForEach(Array(similarityManager.similarGroups.prefix(visibleSimilarCount))) { group in
@@ -363,7 +367,7 @@ struct SimilarPhotosListView: View {
                                 HStack {
                                     Spacer()
                                     Text(L10n.f("common.loading_count", similarityManager.similarGroups.count - visibleSimilarCount))
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                         .onAppear {
                                             visibleSimilarCount = min(visibleSimilarCount + 25, similarityManager.similarGroups.count)
                                         }

@@ -40,11 +40,12 @@ struct SimilarGroupRow: View {
 
                             HStack(spacing: 2) {
                                 Image(systemName: "star.fill")
-                                    .font(.system(size: 8))
-                                    .foregroundColor(.yellow)
+                                    .font(.caption2)
+                                    .foregroundStyle(.yellow)
+                                    .accessibilityHidden(true)
                                 Text(L10n.k("common.favorite"))
                                     .font(.caption2)
-                                    .foregroundColor(.yellow)
+                                    .foregroundStyle(.yellow)
                             }
                         }
                     }
@@ -73,8 +74,8 @@ struct SimilarGroupRow: View {
             // Sağ kısım - Benzerlik skoru
             VStack(alignment: .trailing, spacing: 2) {
                 Text(L10n.percent(group.similarityScore))
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(getScoreColor(group.similarityScore))
+                    .font(.title2.bold())
+                    .foregroundStyle(getScoreColor(group.similarityScore))
                     .minimumScaleFactor(0.8)
                     .lineLimit(1)
 

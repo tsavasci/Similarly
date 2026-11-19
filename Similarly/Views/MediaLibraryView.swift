@@ -20,6 +20,7 @@ struct MediaLibraryView: View {
     @State private var lastDeletedCount = 0
     @State private var lastSavedBytes: Int64 = 0
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 50
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,8 +28,11 @@ struct MediaLibraryView: View {
             VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "film.stack")
-                        .font(.system(size: 50))
-                        .foregroundColor(.blue)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: headerIconSize, height: headerIconSize)
+                        .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.k("media.header.title"))
@@ -37,7 +41,7 @@ struct MediaLibraryView: View {
 
                         Text(L10n.f("common.media_files_count", getTotalMediaCount()))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -167,6 +171,8 @@ struct MediaPhotoGrid: View {
     @State private var selectedFilter: MediaSizeFilter = .all
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
+    @ScaledMetric(relativeTo: .largeTitle) private var emptyIconSize: CGFloat = 60
+    @ScaledMetric(relativeTo: .title) private var filterEmptyIconSize: CGFloat = 40
 
     private var filteredPhotos: [PhotoItem] {
         switch selectedFilter {
@@ -197,8 +203,11 @@ struct MediaPhotoGrid: View {
                 // Boş durum
                 VStack(spacing: 20) {
                     Image(systemName: mediaType == .video ? "video.slash" : "livephoto.slash")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: emptyIconSize, height: emptyIconSize)
+                        .foregroundStyle(.gray)
+                        .accessibilityHidden(true)
 
                     Text(L10n.k("media.empty.title"))
                         .font(.title2)
@@ -206,7 +215,7 @@ struct MediaPhotoGrid: View {
 
                     Text(mediaType.emptyMessage)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .padding()
@@ -215,15 +224,16 @@ struct MediaPhotoGrid: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Image(systemName: mediaType.icon)
-                            .foregroundColor(mediaType.color)
+                            .foregroundStyle(mediaType.color)
+                            .accessibilityHidden(true)
                         Text(mediaType.title)
                             .font(.headline)
-                            .foregroundColor(mediaType.color)
+                            .foregroundStyle(mediaType.color)
                     }
 
                     Text(mediaType.description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     // Boyut ve Süre Filtre Çipleri
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -246,7 +256,7 @@ struct MediaPhotoGrid: View {
                                                 ? mediaType.color.opacity(0.2)
                                                 : Color(UIColor.tertiarySystemFill)
                                         )
-                                        .foregroundColor(selectedFilter == filter ? mediaType.color : .primary)
+                                        .foregroundStyle(selectedFilter == filter ? mediaType.color : .primary)
                                         .clipShape(Capsule())
                                         .overlay(
                                             Capsule()
@@ -267,8 +277,11 @@ struct MediaPhotoGrid: View {
                     VStack(spacing: 12) {
                         Spacer()
                         Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 40))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: filterEmptyIconSize, height: filterEmptyIconSize)
                             .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                         Text(L10n.k("media.filter.empty"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -311,10 +324,11 @@ struct MediaPhotoGrid: View {
                     if !selectedPhotos.isEmpty {
                         HStack {
                             Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
                             Text(L10n.f("media.selected_count", selectedPhotos.count))
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             Spacer()
                         }
                         .padding(.horizontal)
@@ -336,6 +350,7 @@ struct MediaPhotoGrid: View {
                                     systemName: selectedPhotos.count == nonFavorites.count
                                         ? "checkmark.circle" : "circle"
                                 )
+                                .accessibilityHidden(true)
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
                                         ? L10n.k("common.clear_all") : L10n.k("common.select_all")
@@ -358,6 +373,7 @@ struct MediaPhotoGrid: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
+                                    .accessibilityHidden(true)
                                 Text(L10n.f("common.delete_with_count", selectedPhotos.count))
                                     .fontWeight(.semibold)
                             }
@@ -367,7 +383,7 @@ struct MediaPhotoGrid: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .cornerRadius(12)
                         }
                         .buttonStyle(.bouncy(scale: 0.98))
@@ -417,8 +433,9 @@ struct MediaPhotoItem: View {
                 .overlay(alignment: .topLeading) {
                     // Video/Live Photo badge
                     Image(systemName: mediaType.icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white)
+                        .font(.caption2)
+                        .foregroundStyle(.white)
+                        .accessibilityHidden(true)
                         .padding(6)
                         .background(Circle().fill(mediaType.color))
                         .padding(6)
@@ -427,8 +444,9 @@ struct MediaPhotoItem: View {
                     // Favori badge
                     if photo.isFavorite {
                         Image(systemName: "star.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.yellow)
+                            .font(.caption2)
+                            .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
                             .padding(4)
                             .background(Circle().fill(Color.black.opacity(0.6)))
                             .padding(6)
@@ -439,7 +457,8 @@ struct MediaPhotoItem: View {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title3)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                             .background(Circle().fill(Color.white))
                             .padding(6)
                     }
@@ -468,7 +487,7 @@ struct MediaPhotoItem: View {
                 if let date = photo.creationDate {
                     Text(formatDate(date))
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 // Video için süre
@@ -476,11 +495,12 @@ struct MediaPhotoItem: View {
                     if photo.duration > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
-                                .font(.system(size: 8))
+                                .font(.caption2)
+                                .accessibilityHidden(true)
                             Text(formatDuration(photo.duration))
                                 .font(.caption2)
                         }
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     }
                 }
 
@@ -488,11 +508,12 @@ struct MediaPhotoItem: View {
                 if let size = photo.fileSize {
                     HStack(spacing: 4) {
                         Image(systemName: "doc")
-                            .font(.system(size: 8))
+                            .font(.caption2)
+                            .accessibilityHidden(true)
                         Text(formatFileSize(size))
                             .font(.caption2)
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 }
             }
         }
@@ -504,6 +525,8 @@ struct MediaPhotoItem: View {
         .onLongPressGesture {
             onLongPress()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     private func formatDate(_ date: Date) -> String {

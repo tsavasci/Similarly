@@ -44,8 +44,9 @@ struct PhotoGridItem: View {
                     VStack {
                         HStack {
                             Image(systemName: "star.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.yellow)
+                                .font(.callout)
+                                .foregroundStyle(.yellow)
+                                .accessibilityHidden(true)
                                 .padding(6)
                                 .background(Circle().fill(Color.black.opacity(0.6)))
                             Spacer()
@@ -59,7 +60,8 @@ struct PhotoGridItem: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
                         .background(Circle().fill(Color.white))
                         .padding(8)
                 }
@@ -92,15 +94,16 @@ struct PhotoGridItem: View {
 
                 if photo.isFavorite {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(.yellow)
+                        .font(.caption2)
+                        .foregroundStyle(.yellow)
+                        .accessibilityHidden(true)
                 }
             }
 
             // Boyut bilgisi
             Text("\(photo.pixelWidth) × \(photo.pixelHeight)")
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .contentShape(RoundedRectangle(cornerRadius: 12))
         .opacity(photo.isFavorite ? 1.0 : (isSelected ? 1.0 : 0.95))
@@ -110,5 +113,7 @@ struct PhotoGridItem: View {
         .onLongPressGesture {
             onLongPress()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

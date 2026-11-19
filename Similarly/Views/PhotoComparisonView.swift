@@ -36,12 +36,13 @@ struct PhotoComparisonView: View {
 
                     Text(L10n.k("comparison.subtitle"))
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
 
                     // İpucu
                     HStack(spacing: 8) {
                         Image(systemName: "hand.tap.fill")
                             .font(.caption)
+                            .accessibilityHidden(true)
                         Text(L10n.k("comparison.hint.long_press"))
                             .font(.caption)
 
@@ -49,11 +50,12 @@ struct PhotoComparisonView: View {
 
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                         Text(L10n.k("comparison.hint.tap_select"))
                             .font(.caption)
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal)
                 }
                 .padding()
@@ -112,10 +114,11 @@ struct PhotoComparisonView: View {
                     if !selectedPhotos.isEmpty {
                         HStack {
                             Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
                             Text(L10n.f("comparison.selected_count", selectedPhotos.count))
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             Spacer()
                         }
                         .padding(.horizontal)
@@ -137,6 +140,7 @@ struct PhotoComparisonView: View {
                                     systemName: selectedPhotos.count == nonFavorites.count
                                         ? "checkmark.circle" : "circle"
                                 )
+                                .accessibilityHidden(true)
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
                                         ? L10n.k("common.clear_all") : L10n.k("common.select_all")
@@ -149,7 +153,7 @@ struct PhotoComparisonView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.gray.opacity(0.2))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                             .cornerRadius(12)
                         }
 
@@ -159,6 +163,7 @@ struct PhotoComparisonView: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
+                                    .accessibilityHidden(true)
                                 Text(L10n.k("common.delete_selected"))
                                     .fontWeight(.semibold)
                             }
@@ -168,7 +173,7 @@ struct PhotoComparisonView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .cornerRadius(12)
                         }
                         .disabled(selectedPhotos.isEmpty)
@@ -185,14 +190,14 @@ struct PhotoComparisonView: View {
                     Button(L10n.t("common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L10n.t("common.done")) {
                         finalizeSelections()
                     }
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .fontWeight(.semibold)
                 }
             }
@@ -253,8 +258,9 @@ struct ComparisonPhotoCard: View {
                     // Favori badge
                     if photo.isFavorite {
                         Image(systemName: "star.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.yellow)
+                            .font(.footnote)
+                            .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
                             .padding(6)
                             .background(Circle().fill(Color.black.opacity(0.6)))
                             .padding(8)
@@ -265,7 +271,8 @@ struct ComparisonPhotoCard: View {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.title2)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                             .background(Circle().fill(Color.white))
                             .padding(8)
                     }
@@ -294,11 +301,12 @@ struct ComparisonPhotoCard: View {
                 if let date = photo.creationDate {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
-                            .font(.system(size: 10))
+                            .font(.caption2)
+                            .accessibilityHidden(true)
                         Text(formatDate(date))
                             .font(.caption2)
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 }
 
                 // Boyut ve kalite skoru
@@ -307,7 +315,8 @@ struct ComparisonPhotoCard: View {
                     if let size = photo.fileSize {
                         HStack(spacing: 2) {
                             Image(systemName: "doc")
-                                .font(.system(size: 9))
+                                .font(.caption2)
+                                .accessibilityHidden(true)
                             Text(formatFileSize(size))
                                 .font(.caption2)
                         }
@@ -317,24 +326,26 @@ struct ComparisonPhotoCard: View {
                     if photo.isBlurry {
                         HStack(spacing: 2) {
                             Image(systemName: "eye.slash")
-                                .font(.system(size: 9))
+                                .font(.caption2)
+                                .accessibilityHidden(true)
                             Text(L10n.k("comparison.blurry_label"))
                                 .font(.caption2)
                         }
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     }
 
                     // Boyutlar
                     HStack(spacing: 2) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 9))
+                            .font(.caption2)
+                            .accessibilityHidden(true)
                         Text("\(photo.pixelWidth)×\(photo.pixelHeight)")
                             .font(.caption2)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
                 }
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -345,6 +356,8 @@ struct ComparisonPhotoCard: View {
         .onLongPressGesture {
             onLongPress()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     private func formatDate(_ date: Date) -> String {

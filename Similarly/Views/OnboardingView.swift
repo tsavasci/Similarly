@@ -53,6 +53,7 @@ struct OnboardingView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+            // hig-disable-next-line swift/ignores-safe-area: full-bleed decorative background gradient
             .ignoresSafeArea()
             .animation(.easeInOut(duration: 0.5), value: currentPage)
 
@@ -64,7 +65,7 @@ struct OnboardingView: View {
                         completeOnboarding()
                     }) {
                         Text(L10n.k("common.skip"))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.8))
                             .padding()
                     }
                 }
@@ -108,12 +109,13 @@ struct OnboardingView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "chevron.backward")
+                                        .accessibilityHidden(true)
                                     Text(L10n.k("common.back"))
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.white.opacity(0.2))
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .cornerRadius(15)
                             }
                         }
@@ -135,14 +137,16 @@ struct OnboardingView: View {
                                     .fontWeight(.semibold)
                                 if currentPage < pages.count - 1 {
                                     Image(systemName: "chevron.forward")
+                                        .accessibilityHidden(true)
                                 } else {
                                     Image(systemName: "arrow.right.circle.fill")
+                                        .accessibilityHidden(true)
                                 }
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.white)
-                            .foregroundColor(pages[currentPage].gradient[0])
+                            .foregroundStyle(pages[currentPage].gradient[0])
                             .cornerRadius(15)
                         }
                     }
@@ -172,6 +176,7 @@ struct OnboardingPage {
 // MARK: - Onboarding Page View
 struct OnboardingPageView: View {
     let page: OnboardingPage
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 80
 
     var body: some View {
         VStack(spacing: 30) {
@@ -182,21 +187,24 @@ struct OnboardingPageView: View {
                     .frame(width: 160, height: 160)
 
                 Image(systemName: page.icon)
-                    .font(.system(size: 80))
-                    .foregroundColor(.white)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: iconSize, height: iconSize)
+                    .foregroundStyle(.white)
+                    .accessibilityHidden(true)
             }
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
 
             // Metin
             VStack(spacing: 15) {
                 Text(page.title)
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
 
                 Text(page.description)
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.9))
+                    .font(.body)
+                    .foregroundStyle(.white.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }

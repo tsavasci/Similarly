@@ -378,7 +378,10 @@ final class PhotoLibraryManager: NSObject, ObservableObject, PHPhotoLibraryChang
         guard !ids.isEmpty else { return false }
 
         do {
-            try await PHPhotoLibrary.shared().performChanges {
+            // `@Sendable`: Bu blok PhotoKit'in kendi arka plan kuyruğunda çalışır. İşaretlenmezse
+            // sınıfın @MainActor izolasyonunu miras alır ve Swift 6 çalışma zamanı kontrolü
+            // (`dispatch_assert_queue`) uygulamayı çökertir.
+            try await PHPhotoLibrary.shared().performChanges { @Sendable in
                 let assets = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
                 PHAssetChangeRequest.deleteAssets(assets)
             }

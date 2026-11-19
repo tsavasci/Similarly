@@ -37,8 +37,9 @@ struct GroupRowThumbnail: View {
 
             if photo.isFavorite {
                 Image(systemName: "star.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(.yellow)
+                    .font(.caption2)
+                    .foregroundStyle(.yellow)
+                    .accessibilityLabel(L10n.k("common.favorite"))
                     .padding(4)
                     .background(Circle().fill(Color.black.opacity(0.5)))
                     .offset(x: 4, y: 4)

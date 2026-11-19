@@ -19,6 +19,7 @@ struct CleanCelebrationView: View {
     @State private var showStats = false
     @State private var showButtons = false
     @State private var showingShareSheet = false
+    @ScaledMetric(relativeTo: .largeTitle) private var celebrationIconSize: CGFloat = 60
 
     private var formattedSavedSpace: String {
         L10n.bytes(savedBytes)
@@ -47,7 +48,10 @@ struct CleanCelebrationView: View {
                     .opacity(showIcon ? 1.0 : 0.0)
 
                 Image(systemName: "sparkles")
-                    .font(.system(size: 60))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: celebrationIconSize, height: celebrationIconSize)
+                    .accessibilityHidden(true)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.green, .blue],
@@ -64,7 +68,7 @@ struct CleanCelebrationView: View {
             // Başlık & Açıklama (Kademeli yumuşak yükseliş)
             VStack(spacing: 8) {
                 Text(L10n.k("celebration.title"))
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.title.bold())
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
 
@@ -129,6 +133,7 @@ struct CleanCelebrationView: View {
                 } label: {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
+                            .accessibilityHidden(true)
                         Text(L10n.k("celebration.share_button"))
                             .fontWeight(.semibold)
                     }

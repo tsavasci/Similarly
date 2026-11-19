@@ -92,49 +92,44 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // Dil Seçimi
+                // Dil Seçimi - Kompakt HIG NavigationLink satırı
                 Section {
-                    ForEach(LanguageOption.all) { option in
-                        Button {
-                            DesignSystem.Haptics.selection()
-                            withAnimation(DesignSystem.Springs.interactive) {
-                                appLanguage = option.code
+                    NavigationLink {
+                        LanguageSelectionView(
+                            appLanguage: $appLanguage,
+                            selectedOption: selectedLanguageOption,
+                            displayName: languageDisplayName(for:),
+                            localizedSubtitle: languageLocalizedSubtitle(for:)
+                        )
+                    } label: {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.blue.opacity(0.12))
+                                    .frame(width: 32, height: 32)
+
+                                Image(systemName: "globe")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.blue)
+                                    .accessibilityHidden(true)
                             }
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(option.flag)
-                                    .font(.title3)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(languageDisplayName(for: option))
-                                        .foregroundStyle(.primary)
+                            Text(L10n.k("settings.language.title"))
+                                .foregroundStyle(.primary)
 
-                                    if option.code == "system" {
-                                        Text(L10n.k("settings.language.follow_system"))
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                            Spacer()
 
-                                Spacer()
-
-                                if selectedLanguageOption.code == option.code {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.blue)
-                                        .transition(.scale(scale: 0.85).combined(with: .opacity))
-                                }
+                            HStack(spacing: 6) {
+                                Text(selectedLanguageOption.flag)
+                                    .font(.subheadline)
+                                Text(languageDisplayName(for: selectedLanguageOption))
+                                    .foregroundStyle(.secondary)
                             }
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.bouncy(scale: 0.98))
+                        .padding(.vertical, 2)
                     }
-                } header: {
-                    Text(L10n.k("settings.language.title"))
                 } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(L10n.k("settings.language.footer"))
-                        Text(L10n.f("settings.language.current", languageDisplayName(for: selectedLanguageOption)))
-                    }
+                    Text(L10n.k("settings.language.footer"))
                 }
 
                 // Hazır Ayarlar (Emil Kowalski dokunsal kart seçimi)
@@ -154,8 +149,9 @@ struct SettingsView: View {
                                         .frame(width: 38, height: 38)
 
                                     Image(systemName: preset.icon)
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(.callout.weight(.semibold))
                                         .foregroundStyle(selectedPreset == preset ? Color.blue : Color.secondary)
+                                        .accessibilityHidden(true)
                                 }
 
                                 VStack(alignment: .leading, spacing: 3) {
@@ -174,12 +170,14 @@ struct SettingsView: View {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.title3)
                                         .foregroundStyle(.blue)
+                                        .accessibilityHidden(true)
                                         .transition(.scale(scale: 0.85).combined(with: .opacity))
                                 }
                             }
                             .padding(.vertical, 4)
                             .contentShape(Rectangle())
                         }
+                        .accessibilityAddTraits(selectedPreset == preset ? .isSelected : [])
                         .buttonStyle(.bouncy(scale: 0.98))
                     }
                 } header: {
@@ -380,12 +378,14 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "star.fill")
                                 .foregroundStyle(DesignSystem.Colors.favorite)
+                                .accessibilityHidden(true)
                             Text(L10n.k("settings.about.rate_app"))
                                 .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.forward.app")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
                         }
                         .contentShape(Rectangle())
                     }
@@ -398,12 +398,14 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "envelope.fill")
                                 .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
                             Text(L10n.k("settings.about.send_feedback"))
                                 .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.forward.app")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
                         }
                         .contentShape(Rectangle())
                     }
@@ -414,12 +416,14 @@ struct SettingsView: View {
                             HStack {
                                 Image(systemName: "hand.raised.fill")
                                     .foregroundStyle(.green)
+                                    .accessibilityHidden(true)
                                 Text(L10n.k("settings.about.privacy_policy"))
                                     .foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: "arrow.up.forward.square")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
+                                    .accessibilityHidden(true)
                             }
                         }
                     }
@@ -447,6 +451,7 @@ struct SettingsView: View {
                                 Image(systemName: "arrow.up.forward.square")
                                     .font(.footnote)
                                     .foregroundStyle(.blue)
+                                    .accessibilityHidden(true)
                             }
                         }
                     }
@@ -516,27 +521,52 @@ struct SettingsView: View {
         }
     }
 
+    private func normalizedLocaleIdentifier(for code: String) -> String {
+        if code == "zh-Hans" {
+            return "zh_Hans"
+        } else if code == "pt-BR" {
+            return "pt_BR"
+        }
+        return code
+    }
+
     private func languageDisplayName(for option: LanguageOption) -> String {
         if option.code == "system" {
             return L10n.t("settings.language.system")
         }
 
-        let localeIdentifier: String
-        if option.code == "zh-Hans" {
-            localeIdentifier = "zh_Hans"
-        } else if option.code == "pt-BR" {
-            localeIdentifier = "pt_BR"
-        } else {
-            localeIdentifier = option.code
-        }
+        let localeIdentifier = normalizedLocaleIdentifier(for: option.code)
         let locale = Locale(identifier: localeIdentifier)
-        let languageCode = locale.language.languageCode?.identifier ?? option.code
 
+        if let name = locale.localizedString(forIdentifier: localeIdentifier) {
+            return name.capitalized(with: locale)
+        }
+
+        let languageCode = locale.language.languageCode?.identifier ?? option.code
         if let name = locale.localizedString(forLanguageCode: languageCode) {
             return name.capitalized(with: locale)
         }
 
         return option.code
+    }
+
+    private func languageLocalizedSubtitle(for option: LanguageOption) -> String? {
+        if option.code == "system" {
+            return L10n.t("settings.language.follow_system")
+        }
+
+        let localeIdentifier = normalizedLocaleIdentifier(for: option.code)
+        let currentLocale = L10n.appLocale
+
+        if let localizedName = currentLocale.localizedString(forIdentifier: localeIdentifier) {
+            let formatted = localizedName.capitalized(with: currentLocale)
+            let nativeName = languageDisplayName(for: option)
+            if formatted.caseInsensitiveCompare(nativeName) != .orderedSame {
+                return formatted
+            }
+        }
+
+        return nil
     }
 
     private func resetToDefaults() {
@@ -593,6 +623,96 @@ struct SettingsView: View {
 
         // Preset seçimini güncelle
         updateSelectedPreset()
+    }
+}
+
+// MARK: - Language Selection Detail View
+private struct LanguageSelectionView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var appLanguage: String
+    let selectedOption: SettingsView.LanguageOption
+    let displayName: (SettingsView.LanguageOption) -> String
+    let localizedSubtitle: (SettingsView.LanguageOption) -> String?
+
+    private var systemOption: SettingsView.LanguageOption {
+        SettingsView.LanguageOption.all[0]
+    }
+
+    private var languageOptions: [SettingsView.LanguageOption] {
+        Array(SettingsView.LanguageOption.all.dropFirst())
+    }
+
+    var body: some View {
+        List {
+            Section {
+                languageRow(for: systemOption)
+            }
+
+            Section {
+                ForEach(languageOptions) { option in
+                    languageRow(for: option)
+                }
+            } footer: {
+                Text(L10n.f("settings.language.current", displayName(selectedOption)))
+            }
+        }
+        .navigationTitle(L10n.k("settings.language.title"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func languageRow(for option: SettingsView.LanguageOption) -> some View {
+        let isSelected = selectedOption.code == option.code
+
+        Button {
+            DesignSystem.Haptics.selection()
+            withAnimation(DesignSystem.Springs.interactive) {
+                appLanguage = option.code
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                dismiss()
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Text(option.flag)
+                    .font(.title3)
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle()
+                            .fill(isSelected ? Color.blue.opacity(0.14) : Color(UIColor.tertiarySystemFill))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(displayName(for: option))
+                        .font(.body.weight(isSelected ? .semibold : .regular))
+                        .foregroundStyle(.primary)
+
+                    if let subtitle = localizedSubtitle(option) {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+        }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .buttonStyle(.bouncy(scale: 0.98))
+    }
+
+    private func displayName(for option: SettingsView.LanguageOption) -> String {
+        displayName(option)
     }
 }
 

@@ -37,16 +37,17 @@ struct SimilarPhotoDetailView: View {
 
                 Text(L10n.k("similar.detail.select_to_delete"))
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 // Favori uyarısı
                 if group.hasFavorite {
                     HStack {
                         Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
+                            .foregroundStyle(.yellow)
+                            .accessibilityHidden(true)
                         Text(L10n.k("similar.detail.favorite_protected"))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
@@ -107,6 +108,7 @@ struct SimilarPhotoDetailView: View {
             }) {
                 HStack {
                     Image(systemName: "arrow.left.and.right.square")
+                        .accessibilityHidden(true)
                     Text(L10n.k("comparison.title"))
                         .fontWeight(.semibold)
                 }
@@ -116,7 +118,7 @@ struct SimilarPhotoDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.blue.opacity(0.2))
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
                 .cornerRadius(12)
             }
             .padding(.horizontal)
@@ -137,6 +139,7 @@ struct SimilarPhotoDetailView: View {
                         Image(
                             systemName: selectedPhotos.count == nonFavorites.count
                                 ? "checkmark.circle" : "circle")
+                            .accessibilityHidden(true)
                         Text(
                             selectedPhotos.count == nonFavorites.count
                                 ? L10n.k("common.clear_all") : L10n.k("common.select_all"))
@@ -156,6 +159,7 @@ struct SimilarPhotoDetailView: View {
                 }) {
                     HStack {
                         Image(systemName: "clock.arrow.circlepath")
+                            .accessibilityHidden(true)
                         Text(L10n.k("common.oldest"))
                     }
                     // Uzun çevirilerde düğme iki satıra bölünüp yanındakinden uzamasın.
@@ -175,6 +179,7 @@ struct SimilarPhotoDetailView: View {
             }) {
                 HStack {
                     Image(systemName: "trash.fill")
+                        .accessibilityHidden(true)
                     Text(L10n.f("common.delete_selected_count", selectedPhotos.count))
                         .fontWeight(.semibold)
                 }
@@ -184,7 +189,7 @@ struct SimilarPhotoDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .cornerRadius(12)
             }
             .disabled(selectedPhotos.isEmpty)

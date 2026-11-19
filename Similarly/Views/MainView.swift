@@ -20,6 +20,7 @@ struct MainView: View {
     @State private var showingSettings = false
     @State private var showingError = false
     @State private var analysisTask: Task<Void, Never>?
+    @ScaledMetric(relativeTo: .largeTitle) private var heroIconSize: CGFloat = 80
 
     init(photoManager: PhotoLibraryManager? = nil, similarityManager: SimilarityManager? = nil) {
         if let pm = photoManager {
@@ -42,7 +43,10 @@ struct MainView: View {
                     // Logo ve başlık
                     VStack(spacing: 10) {
                         Image(systemName: "photo.stack.fill")
-                            .font(.system(size: 80))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: heroIconSize, height: heroIconSize)
+                            .accessibilityHidden(true)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.blue, .purple],
@@ -57,9 +61,9 @@ struct MainView: View {
 
                         Text(L10n.k("main.subtitle"))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.top, 50)
+                    .padding(.top, 16)
 
                     Spacer()
 
@@ -88,8 +92,9 @@ struct MainView: View {
                                                 .fill(Color.green.opacity(0.15))
                                                 .frame(width: 44, height: 44)
                                             Image(systemName: "sparkles.square.filled.on.square")
-                                                .font(.system(size: 20))
+                                                .font(.title3)
                                                 .foregroundStyle(DesignSystem.Colors.success)
+                                                .accessibilityHidden(true)
                                         }
 
                                         VStack(alignment: .leading, spacing: 2) {
@@ -106,6 +111,7 @@ struct MainView: View {
                                         Image(systemName: "chevron.forward")
                                             .font(.footnote.weight(.semibold))
                                             .foregroundStyle(.secondary)
+                                            .accessibilityHidden(true)
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
@@ -156,19 +162,20 @@ struct MainView: View {
                         }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .font(.callout.weight(.semibold))
+                                    .foregroundStyle(.blue)
+                                    .accessibilityHidden(true)
 
                                 Text(L10n.k("main.limited_access.banner"))
                                     .font(.subheadline)
-                                    .foregroundColor(.primary)
+                                    .foregroundStyle(.primary)
 
                                 Spacer()
 
                                 Text(L10n.k("main.limited_access.action"))
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                             }
                             .padding(.vertical, 12)
                             .padding(.horizontal, 16)
@@ -191,13 +198,14 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "photo.on.rectangle.angled")
+                                        .accessibilityHidden(true)
                                     Text(L10n.k("main.actions.load_photos"))
                                         .fontWeight(.semibold)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.blue)
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .cornerRadius(15)
                             }
                             .buttonStyle(.bouncy(scale: 0.98))
@@ -218,6 +226,7 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "sparkles")
+                                        .accessibilityHidden(true)
                                     Text(L10n.k("main.actions.find_similar"))
                                         .fontWeight(.semibold)
                                 }
@@ -230,7 +239,7 @@ struct MainView: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .cornerRadius(15)
                             }
                             .buttonStyle(.bouncy(scale: 0.98))
@@ -244,13 +253,14 @@ struct MainView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.clockwise")
+                                        .accessibilityHidden(true)
                                     Text(L10n.k("common.reload"))
                                         .fontWeight(.semibold)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.gray.opacity(0.2))
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
                                 .cornerRadius(15)
                             }
                             .buttonStyle(.bouncy(scale: 0.98))
@@ -258,8 +268,9 @@ struct MainView: View {
                         }
                     }
                     .padding(.horizontal, 30)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 24)
                 }
+                .fitOrScroll()
 
                 // İşleniyor göstergesi
                 if photoManager.isProcessing {
@@ -290,7 +301,9 @@ struct MainView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingSettings = true }) {
                         Image(systemName: "gear")
+                            .accessibilityHidden(true)
                     }
+                    .accessibilityLabel(L10n.k("settings.nav_title"))
                 }
             }
             .sheet(isPresented: $showingSettings) {
@@ -325,6 +338,29 @@ struct MainView: View {
     }
 
 
+// MARK: - Fit or Scroll
+
+/// İçerik ekrana sığıyorsa tam yükseklikte gösterir (Spacer'lar boşluğu paylaşır);
+/// sığmıyorsa (küçük ekran, büyük yazı boyutu, çok kart) kaydırılabilir hale getirir.
+private struct FitOrScrollModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            // İçerik sığıyorsa kaydırma/esneme olmasın.
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+}
+
+private extension View {
+    func fitOrScroll() -> some View {
+        modifier(FitOrScrollModifier())
+    }
+}
+
 // MARK: - Stat Card Component
 struct StatCard: View {
     let icon: String
@@ -335,14 +371,15 @@ struct StatCard: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-                .font(.system(size: 30))
-                .foregroundColor(color)
+                .font(.title)
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
                 .frame(width: 50)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                 Text(value)
                     .font(.title3)
                     .fontWeight(.semibold)
@@ -365,6 +402,7 @@ struct ProcessingOverlay: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
+                // hig-disable-next-line swift/ignores-safe-area: full-bleed modal dimming backdrop
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
@@ -374,7 +412,7 @@ struct ProcessingOverlay: View {
 
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
 
                 ProgressView(value: progress)
                     .progressViewStyle(.linear)
@@ -383,13 +421,13 @@ struct ProcessingOverlay: View {
 
                 Text(L10n.percent(progress))
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundStyle(.white.opacity(0.8))
 
                 if let onCancel {
                     Button(action: onCancel) {
                         Text(L10n.t("common.cancel"))
                             .font(.subheadline)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 8)
                             .background(Color.white.opacity(0.2))

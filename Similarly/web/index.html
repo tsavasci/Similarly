@@ -586,6 +586,7 @@
                         <li><a href="privacy.html" class="nav-link" data-i18n="nav.privacy">Privacy Policy</a></li>
                     </ul>
 
+                    <!-- hig-disable-next-line web/div-as-nav-header-class: layout wrapper inside semantic <nav> landmark -->
                     <div class="nav-actions">
                         <div class="lang-selector-wrapper">
                             <select id="langSelect" class="lang-select" aria-label="Select Language">
@@ -665,11 +666,11 @@
             <!-- Features Section -->
             <section class="features" id="features">
                 <div class="container">
-                    <div class="section-header">
+                    <header class="section-header">
                         <span class="section-badge" data-i18n="features.badge">Features</span>
                         <h2 data-i18n="features.title">Why Choose Similarly?</h2>
                         <p data-i18n="features.subtitle">The fastest, safest, and smartest way to organize your iPhone camera roll.</p>
-                    </div>
+                    </header>
                     <div class="features-grid">
                         <div class="feature-card">
                             <div class="feature-icon">✨</div>
@@ -708,11 +709,11 @@
             <!-- FAQ Section -->
             <section class="faq" id="faq">
                 <div class="container">
-                    <div class="section-header">
+                    <header class="section-header">
                         <span class="section-badge" data-i18n="faq.badge">FAQ</span>
                         <h2 data-i18n="faq.title">Frequently Asked Questions</h2>
                         <p data-i18n="faq.subtitle">Everything you need to know about Similarly.</p>
-                    </div>
+                    </header>
                     <div class="faq-list">
                         <div class="faq-item">
                             <h4 data-i18n="faq.q1">Are my photos uploaded to any external server?</h4>
@@ -750,29 +751,31 @@
 
         <footer>
             <div class="container">
+                <!-- hig-disable-next-line web/div-as-nav-header-class: layout grid inside semantic <footer> landmark -->
                 <div class="footer-content">
-                    <div class="footer-section">
+                    <section class="footer-section">
                         <h3>Similarly</h3>
                         <p style="color: var(--gray-400); line-height: 1.7" data-i18n="footer.desc">
                             The smartest, privacy-first similar & duplicate photo cleaner for iOS. Made with ❤️ in Turkey.
                         </p>
-                    </div>
-                    <div class="footer-section">
+                    </section>
+                    <section class="footer-section">
                         <h3 data-i18n="footer.product">Product</h3>
-                        <div class="footer-links">
+                        <nav class="footer-links" aria-label="Product">
                             <a href="#features" data-i18n="nav.features">Features</a>
                             <a href="#faq" data-i18n="nav.faq">FAQ</a>
                             <a href="https://apps.apple.com/us/app/similarly/id6753979293" data-i18n="nav.download">Download</a>
-                        </div>
-                    </div>
-                    <div class="footer-section">
+                        </nav>
+                    </section>
+                    <section class="footer-section">
                         <h3 data-i18n="footer.legal">Legal</h3>
-                        <div class="footer-links">
+                        <nav class="footer-links" aria-label="Legal">
                             <a href="privacy.html" data-i18n="footer.privacy">Privacy Policy</a>
                             <a href="mailto:support@similarly.app">Support & Contact</a>
-                        </div>
-                    </div>
+                        </nav>
+                    </section>
                 </div>
+                <!-- hig-disable-next-line web/div-as-nav-header-class: copyright bar inside semantic <footer> landmark -->
                 <div class="footer-bottom">
                     <p class="copyright" data-i18n="footer.rights">© 2025 Similarly. All rights reserved.</p>
                 </div>

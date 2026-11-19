@@ -19,6 +19,7 @@ struct FullImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .topTrailing) {
+                // hig-disable-next-line swift/ignores-safe-area: full-bleed dark backdrop for full-screen media viewer
                 Color.black.ignoresSafeArea()
 
                 if let image = fullImage {
@@ -36,9 +37,11 @@ struct FullImageView: View {
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
+                        .accessibilityHidden(true)
                         .padding()
                 }
+                .accessibilityLabel(L10n.k("common.close"))
             }
             .task {
                 let maxPixelSize = max(geometry.size.width, geometry.size.height) * displayScale

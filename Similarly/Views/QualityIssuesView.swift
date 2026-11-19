@@ -25,6 +25,7 @@ struct QualityIssuesView: View {
     @State private var lastDeletedCount = 0
     @State private var lastSavedBytes: Int64 = 0
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 50
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,8 +33,11 @@ struct QualityIssuesView: View {
             VStack(spacing: 12) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.orange)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: headerIconSize, height: headerIconSize)
+                        .foregroundStyle(.orange)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.k("quality.header.title"))
@@ -42,7 +46,7 @@ struct QualityIssuesView: View {
 
                         Text(L10n.f("quality.total_found", similarityManager.getTotalQualityIssuesCount()))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -166,6 +170,7 @@ struct QualityPhotoGrid: View {
 
     @State private var selectedPhotos = Set<String>()
     @State private var showingFullImage: PhotoItem?
+    @ScaledMetric(relativeTo: .largeTitle) private var emptyIconSize: CGFloat = 60
 
     private func markAsNotIssue(_ photos: [PhotoItem]) {
         // Haptic feedback
@@ -201,8 +206,11 @@ struct QualityPhotoGrid: View {
                 // Boş durum
                 VStack(spacing: 20) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.green)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: emptyIconSize, height: emptyIconSize)
+                        .foregroundStyle(.green)
+                        .accessibilityHidden(true)
 
                     Text(L10n.k("quality.empty.title"))
                         .font(.title2)
@@ -210,7 +218,7 @@ struct QualityPhotoGrid: View {
 
                     Text(issueType.emptyMessage)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .padding()
@@ -219,15 +227,16 @@ struct QualityPhotoGrid: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: issueType.icon)
-                            .foregroundColor(issueType.color)
+                            .foregroundStyle(issueType.color)
+                            .accessibilityHidden(true)
                         Text(issueType.title)
                             .font(.headline)
-                            .foregroundColor(issueType.color)
+                            .foregroundStyle(issueType.color)
                     }
 
                     Text(issueType.description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
@@ -281,6 +290,7 @@ struct QualityPhotoGrid: View {
                                     systemName: selectedPhotos.count == nonFavorites.count
                                         ? "checkmark.circle" : "circle"
                                 )
+                                .accessibilityHidden(true)
                                 Text(
                                     selectedPhotos.count == nonFavorites.count
                                         ? L10n.k("common.clear_all") : L10n.k("common.select_all")
@@ -306,6 +316,7 @@ struct QualityPhotoGrid: View {
                         }) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
+                                    .accessibilityHidden(true)
                                 Text(issueType.notIssueButtonText)
                                     .fontWeight(.semibold)
                             }
@@ -315,7 +326,7 @@ struct QualityPhotoGrid: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.green)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .cornerRadius(12)
                         }
                         .disabled(selectedPhotos.isEmpty)
@@ -327,6 +338,7 @@ struct QualityPhotoGrid: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash.fill")
+                                    .accessibilityHidden(true)
                                 Text(L10n.k("common.delete"))
                                     .fontWeight(.semibold)
                             }
@@ -336,7 +348,7 @@ struct QualityPhotoGrid: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(selectedPhotos.isEmpty ? Color.gray : Color.red)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .cornerRadius(12)
                         }
                         .disabled(selectedPhotos.isEmpty)
@@ -387,8 +399,9 @@ struct QualityPhotoItem: View {
                     VStack {
                         HStack {
                             Image(systemName: "star.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.yellow)
+                                .font(.caption2)
+                                .foregroundStyle(.yellow)
+                                .accessibilityHidden(true)
                                 .padding(4)
                                 .background(Circle().fill(Color.black.opacity(0.6)))
                             Spacer()
@@ -402,7 +415,8 @@ struct QualityPhotoItem: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title3)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
                         .background(Circle().fill(Color.white))
                         .padding(6)
                 }
@@ -420,13 +434,14 @@ struct QualityPhotoItem: View {
             // Çekim tarihi (ham kalite skoru kullanıcıya bir şey ifade etmediği için gösterilmiyor)
             HStack(spacing: 4) {
                 Image(systemName: issueType.icon)
-                    .font(.system(size: 8))
-                    .foregroundColor(issueType.color)
+                    .font(.caption2)
+                    .foregroundStyle(issueType.color)
+                    .accessibilityHidden(true)
 
                 if let date = photo.creationDate {
                     Text(L10n.date(date))
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -444,6 +459,8 @@ struct QualityPhotoItem: View {
         .onLongPressGesture {
             onLongPress()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 

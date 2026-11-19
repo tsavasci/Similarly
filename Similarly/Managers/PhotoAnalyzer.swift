@@ -198,6 +198,7 @@ nonisolated struct PhotoAnalyzer: Sendable {
             scaled.clampedToExtent(),
             toBitmap: &pixels,
             rowBytes: rowBytes,
+            // hig-disable-next-line swift/hardcoded-cgrect: CoreImage pixel buffer bounds, not UI layout
             bounds: CGRect(x: 0, y: 0, width: side, height: side),
             format: .RGBA8,
             colorSpace: srgb
